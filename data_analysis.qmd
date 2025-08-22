@@ -85,9 +85,11 @@ plot_gender <- registration_data |>
   mutate(gender_label = coalesce(label, gender)) |> 
   ggplot(aes(x = reorder(gender_label, n), y = n)) +
   geom_col(fill = owd_palette[1]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
   coord_flip() +
   labs(x = "Gender", y = "Count") +
-  theme_minimal()
+  theme_minimal() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_gender)
 ```
@@ -108,9 +110,11 @@ plot_age <- registration_data |>
   mutate(age_label = coalesce(label, age_group)) |> 
   ggplot(aes(x = reorder(age_label, n), y = n)) +
   geom_col(fill = owd_palette[2]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
   coord_flip() +
   labs(x = "Age Group", y = "Count") +
-  theme_minimal()
+  theme_minimal() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_age)
 ```
@@ -133,10 +137,12 @@ plot_country <- registration_data |>
   filter(rank <= 10) |>  # Show top 10 countries with ties
   ggplot(aes(x = reorder(country_name, n), y = n)) +
   geom_col(fill = owd_palette[3]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
   coord_flip() +
   labs(x = "Country", y = "Count", 
        title = "Top 10 Countries") +
-  theme_minimal()
+  theme_minimal() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_country)
 ```
@@ -158,9 +164,11 @@ plot_education <- registration_data |>
   mutate(education_label = coalesce(label, education)) |> 
   ggplot(aes(x = reorder(education_label, n), y = n)) +
   geom_col(fill = owd_palette[4]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
   coord_flip() +
   labs(x = "Education Level", y = "Count") +
-  theme_minimal()
+  theme_minimal() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_education)
 ```
@@ -181,9 +189,11 @@ plot_employment <- registration_data |>
   mutate(employment_label = coalesce(label, employment_situation)) |> 
   ggplot(aes(x = reorder(employment_label, n), y = n)) +
   geom_col(fill = owd_palette[5]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
   coord_flip() +
   labs(x = "Employment Situation", y = "Count") +
-  theme_minimal()
+  theme_minimal() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_employment)
 ```
@@ -204,9 +214,11 @@ plot_org <- registration_data |>
   mutate(org_label = coalesce(label, org_type)) |> 
   ggplot(aes(x = reorder(org_label, n), y = n)) +
   geom_col(fill = owd_palette[6]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
   coord_flip() +
   labs(x = "Organization Type", y = "Count") +
-  theme_minimal()
+  theme_minimal() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_org)
 ```
@@ -240,10 +252,12 @@ plot_programming <- prog_data |>
   count(skill_type, level_label) |> 
   ggplot(aes(x = reorder(level_label, n), y = n, fill = skill_type)) +
   geom_col(position = "dodge") +
+  geom_text(aes(label = n), position = position_dodge(width = 0.9), hjust = -0.2, size = 3) +
   coord_flip() +
   labs(x = "Experience Level", y = "Count", fill = "Skill Type") +
   theme_minimal() +
-  scale_fill_manual(values = owd_palette[1:3])
+  scale_fill_manual(values = owd_palette[1:3]) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_programming)
 ```
@@ -280,10 +294,12 @@ plot_llm_platforms <- llm_platforms_data |>
   filter(rank <= 10) |>  # This will include ties at rank 10
   ggplot(aes(x = reorder(platform_label, n), y = n)) +
   geom_col(fill = owd_palette[2]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
   coord_flip() +
   labs(x = "LLM Platform", y = "Number of Users",
        title = "Top 10 LLM Platforms Used by Participants") +
-  theme_minimal()
+  theme_minimal() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_llm_platforms)
 ```
