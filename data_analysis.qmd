@@ -1,0 +1,283 @@
+---
+title: "Data Analysis"
+format: html
+editor: visual
+---
+
+## Introduction
+
+This document contains the data analysis for the registration analysis project.
+
+## Setup
+
+```{r}
+#| label: setup
+#| include: false
+
+# Load required libraries
+library(tidyverse)
+library(robotoolbox)
+library(readxl)
+library(labelled)
+
+# Set global options
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+## Data Import
+
+```{r}
+#| label: load-data
+
+form_id <- "ashaEDvw4ZLwGi9bqXGeqb"
+form_file <- "registration_form.xlsx"
+
+# fetch data from Kobo with robotoolbox
+raw_data <- kobo_data(x = form_id,
+                      all_versions = TRUE)
+
+# read in questionnaire and labels from XLS form 
+questionnaire <- read_xlsx(form_file,
+                           sheet = "survey")
+
+label_dict <- read_xlsx("registration_form.xlsx",
+                        sheet = "choices")
+```
+
+## Exploratory Data Analysis
+
+```{r}
+#| label: data-processing
+
+registration_data <- raw_data |> 
+  select(github_username,
+         gender,
+         age_group,
+         country_residence,
+         education,
+         employment_situation,
+         org_type,
+         prog_general,
+         prog_r,
+         starts_with("llm_platforms"))
+
+# starts_with("llm_") & !starts_with("llm_platforms")
+```
+
+## Analysis
+
+### Categorical Variables Distribution
+
+```{r}
+#| label: plot-gender
+#| fig-cap: "Distribution of Gender"
+
+# Get gender labels
+gender_labels <- label_dict |> 
+  filter(list_name == "list_gender") |> 
+  select(name, label)
+
+registration_data |> 
+  count(gender) |> 
+  left_join(gender_labels, by = c("gender" = "name")) |> 
+  mutate(gender_label = coalesce(label, gender)) |> 
+  ggplot(aes(x = reorder(gender_label, n), y = n)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(x = "Gender", y = "Count") +
+  theme_minimal()
+```
+
+```{r}
+#| label: plot-age
+#| fig-cap: "Distribution of Age Groups"
+
+# Get age group labels
+age_labels <- label_dict |> 
+  filter(list_name == "age_group") |> 
+  select(name, label)
+
+registration_data |> 
+  count(age_group) |> 
+  left_join(age_labels, by = c("age_group" = "name")) |> 
+  mutate(age_label = coalesce(label, age_group)) |> 
+  ggplot(aes(x = reorder(age_label, n), y = n)) +
+  geom_col(fill = "darkgreen") +
+  coord_flip() +
+  labs(x = "Age Group", y = "Count") +
+  theme_minimal()
+```
+
+```{r}
+#| label: plot-country
+#| fig-cap: "Distribution by Country of Residence"
+
+# Get country labels
+country_labels <- label_dict |> 
+  filter(list_name == "countries") |> 
+  select(name, label)
+
+registration_data |> 
+  count(country_residence) |> 
+  left_join(country_labels, by = c("country_residence" = "name")) |> 
+  mutate(country_name = coalesce(label, country_residence)) |> 
+  slice_max(n, n = 15) |>  # Show top 15 countries
+  ggplot(aes(x = reorder(country_name, n), y = n)) +
+  geom_col(fill = "coral") +
+  coord_flip() +
+  labs(x = "Country", y = "Count", 
+       title = "Top 15 Countries") +
+  theme_minimal()
+```
+
+```{r}
+#| label: plot-education
+#| fig-cap: "Distribution of Education Levels"
+
+# Get education labels and remove text in parentheses
+education_labels <- label_dict |> 
+  filter(list_name == "education_level") |> 
+  select(name, label) |> 
+  mutate(label = str_remove(label, "\\s*\\(.*\\)"))
+
+registration_data |> 
+  count(education) |> 
+  left_join(education_labels, by = c("education" = "name")) |> 
+  mutate(education_label = coalesce(label, education)) |> 
+  ggplot(aes(x = reorder(education_label, n), y = n)) +
+  geom_col(fill = "purple") +
+  coord_flip() +
+  labs(x = "Education Level", y = "Count") +
+  theme_minimal()
+```
+
+```{r}
+#| label: plot-employment
+#| fig-cap: "Distribution of Employment Situation"
+
+# Get employment situation labels
+employment_labels <- label_dict |> 
+  filter(list_name == "employment_status") |> 
+  select(name, label)
+
+registration_data |> 
+  count(employment_situation) |> 
+  left_join(employment_labels, by = c("employment_situation" = "name")) |> 
+  mutate(employment_label = coalesce(label, employment_situation)) |> 
+  ggplot(aes(x = reorder(employment_label, n), y = n)) +
+  geom_col(fill = "orange") +
+  coord_flip() +
+  labs(x = "Employment Situation", y = "Count") +
+  theme_minimal()
+```
+
+```{r}
+#| label: plot-org-type
+#| fig-cap: "Distribution of Organization Types"
+
+# Get organization type labels
+org_labels <- label_dict |> 
+  filter(list_name == "organisation_type") |> 
+  select(name, label)
+
+registration_data |> 
+  count(org_type) |> 
+  left_join(org_labels, by = c("org_type" = "name")) |> 
+  mutate(org_label = coalesce(label, org_type)) |> 
+  ggplot(aes(x = reorder(org_label, n), y = n)) +
+  geom_col(fill = "darkred") +
+  coord_flip() +
+  labs(x = "Organization Type", y = "Count") +
+  theme_minimal()
+```
+
+```{r}
+#| label: plot-programming-skills
+#| fig-cap: "Programming Experience Levels"
+#| fig-height: 6
+
+# Get programming level labels
+prog_labels <- label_dict |> 
+  filter(list_name == "programming_exp") |> 
+  select(name, label)
+
+# Combine programming experience variables
+prog_data <- registration_data |> 
+  select(prog_general, prog_r) |> 
+  pivot_longer(everything(), 
+               names_to = "skill_type", 
+               values_to = "level") |> 
+  left_join(prog_labels, by = c("level" = "name")) |> 
+  mutate(level_label = coalesce(label, level),
+         skill_type = case_when(
+           skill_type == "prog_general" ~ "General Programming",
+           skill_type == "prog_r" ~ "R Programming"
+         ))
+
+prog_data |> 
+  count(skill_type, level_label) |> 
+  ggplot(aes(x = reorder(level_label, n), y = n, fill = skill_type)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(x = "Experience Level", y = "Count", fill = "Skill Type") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set2")
+```
+
+```{r}
+#| label: plot-llm-usage
+#| fig-cap: "LLM Usage Patterns"
+#| fig-height: 8
+
+# Get LLM labels for different aspects
+llm_use_labels <- label_dict |> 
+  filter(list_name == "llm_use") |> 
+  select(name, use_label = label)
+
+llm_benefit_labels <- label_dict |> 
+  filter(list_name == "llm_benefit") |> 
+  select(name, benefit_label = label)
+
+llm_frequency_labels <- label_dict |> 
+  filter(list_name == "llm_frequency") |> 
+  select(name, freq_label = label)
+
+# Process LLM variables
+llm_data <- registration_data |> 
+  select(starts_with("llm_")) |> 
+  pivot_longer(everything(), 
+               names_to = "llm_aspect", 
+               values_to = "response") |> 
+  filter(!is.na(response)) |> 
+  mutate(llm_aspect = str_remove(llm_aspect, "llm_")) |> 
+  left_join(llm_use_labels, by = c("response" = "name")) |> 
+  left_join(llm_benefit_labels, by = c("response" = "name")) |> 
+  left_join(llm_frequency_labels, by = c("response" = "name")) |> 
+  mutate(response_label = coalesce(use_label, benefit_label, freq_label, response))
+
+llm_data |> 
+  count(llm_aspect, response_label) |> 
+  ggplot(aes(x = reorder(response_label, n), y = n)) +
+  geom_col(fill = "navy") +
+  coord_flip() +
+  facet_wrap(~llm_aspect, scales = "free", ncol = 2) +
+  labs(x = "", y = "Count") +
+  theme_minimal() +
+  theme(strip.text = element_text(size = 10, face = "bold"))
+```
+
+## Results
+
+```{r}
+#| label: results
+
+# Display results
+```
+
+## Conclusions
+
+Summary of findings and conclusions.
