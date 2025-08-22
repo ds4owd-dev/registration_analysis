@@ -4,15 +4,18 @@ format: html
 editor: visual
 ---
 
-## Introduction
-
-This document contains the data analysis for the registration analysis project.
-
-## Setup
+This document contains a descriptive and exploratory analysis of the data collected for the [Data Science for Open WASH data course](https://ds4owd-002.github.io/website/) registration form. 
 
 ```{r}
 #| label: setup
 #| include: false
+
+# Set global options
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
 
 # Load required libraries
 library(tidyverse)
@@ -20,15 +23,11 @@ library(robotoolbox)
 library(readxl)
 library(labelled)
 
-# Set global options
-knitr::opts_chunk$set(
-  echo = TRUE,
-  warning = FALSE,
-  message = FALSE
-)
+# Define OWD color palette
+owd_palette <- c("#5b195b", "#9b2c60", "#ce525b",
+                 "#f08453", "#ffbd54", "#f9f871")
 ```
 
-## Data Import
 
 ```{r}
 #| label: load-data
@@ -48,8 +47,6 @@ label_dict <- read_xlsx("registration_form.xlsx",
                         sheet = "choices")
 ```
 
-## Exploratory Data Analysis
-
 ```{r}
 #| label: data-processing
 
@@ -64,18 +61,18 @@ registration_data <- raw_data |>
          prog_general,
          prog_r,
          prog_python,
-         starts_with("llm_platforms"))
+         starts_with("llm_platforms")) |> 
+  distinct(github_username, .keep_all = TRUE)
 
 # starts_with("llm_") & !starts_with("llm_platforms")
 ```
 
-## Analysis
+## Categorical Variables Distribution
 
-### Categorical Variables Distribution
+### Gender
 
 ```{r}
 #| label: plot-gender
-#| fig-cap: "Distribution of Gender"
 
 # Get gender labels
 gender_labels <- label_dict |> 
@@ -87,15 +84,16 @@ registration_data |>
   left_join(gender_labels, by = c("gender" = "name")) |> 
   mutate(gender_label = coalesce(label, gender)) |> 
   ggplot(aes(x = reorder(gender_label, n), y = n)) +
-  geom_col(fill = "steelblue") +
+  geom_col(fill = owd_palette[1]) +
   coord_flip() +
   labs(x = "Gender", y = "Count") +
   theme_minimal()
 ```
 
+### Age group
+
 ```{r}
 #| label: plot-age
-#| fig-cap: "Distribution of Age Groups"
 
 # Get age group labels
 age_labels <- label_dict |> 
@@ -107,15 +105,16 @@ registration_data |>
   left_join(age_labels, by = c("age_group" = "name")) |> 
   mutate(age_label = coalesce(label, age_group)) |> 
   ggplot(aes(x = reorder(age_label, n), y = n)) +
-  geom_col(fill = "darkgreen") +
+  geom_col(fill = owd_palette[2]) +
   coord_flip() +
   labs(x = "Age Group", y = "Count") +
   theme_minimal()
 ```
 
+### Country of residence
+
 ```{r}
 #| label: plot-country
-#| fig-cap: "Distribution by Country of Residence"
 
 # Get country labels
 country_labels <- label_dict |> 
@@ -125,19 +124,21 @@ country_labels <- label_dict |>
 registration_data |> 
   count(country_residence) |> 
   left_join(country_labels, by = c("country_residence" = "name")) |> 
-  mutate(country_name = coalesce(label, country_residence)) |> 
-  slice_max(n, n = 15) |>  # Show top 15 countries
+  mutate(country_name = coalesce(label, country_residence),
+         rank = min_rank(desc(n))) |> 
+  filter(rank <= 10) |>  # Show top 10 countries with ties
   ggplot(aes(x = reorder(country_name, n), y = n)) +
-  geom_col(fill = "coral") +
+  geom_col(fill = owd_palette[3]) +
   coord_flip() +
   labs(x = "Country", y = "Count", 
-       title = "Top 15 Countries") +
+       title = "Top 10 Countries") +
   theme_minimal()
 ```
 
+### Education level
+
 ```{r}
 #| label: plot-education
-#| fig-cap: "Distribution of Education Levels"
 
 # Get education labels and remove text in parentheses
 education_labels <- label_dict |> 
@@ -150,15 +151,16 @@ registration_data |>
   left_join(education_labels, by = c("education" = "name")) |> 
   mutate(education_label = coalesce(label, education)) |> 
   ggplot(aes(x = reorder(education_label, n), y = n)) +
-  geom_col(fill = "purple") +
+  geom_col(fill = owd_palette[4]) +
   coord_flip() +
   labs(x = "Education Level", y = "Count") +
   theme_minimal()
 ```
 
+### Employment situation
+
 ```{r}
 #| label: plot-employment
-#| fig-cap: "Distribution of Employment Situation"
 
 # Get employment situation labels
 employment_labels <- label_dict |> 
@@ -170,15 +172,16 @@ registration_data |>
   left_join(employment_labels, by = c("employment_situation" = "name")) |> 
   mutate(employment_label = coalesce(label, employment_situation)) |> 
   ggplot(aes(x = reorder(employment_label, n), y = n)) +
-  geom_col(fill = "orange") +
+  geom_col(fill = owd_palette[5]) +
   coord_flip() +
   labs(x = "Employment Situation", y = "Count") +
   theme_minimal()
 ```
 
+### Organization type
+
 ```{r}
 #| label: plot-org-type
-#| fig-cap: "Distribution of Organization Types"
 
 # Get organization type labels
 org_labels <- label_dict |> 
@@ -190,15 +193,16 @@ registration_data |>
   left_join(org_labels, by = c("org_type" = "name")) |> 
   mutate(org_label = coalesce(label, org_type)) |> 
   ggplot(aes(x = reorder(org_label, n), y = n)) +
-  geom_col(fill = "darkred") +
+  geom_col(fill = owd_palette[6]) +
   coord_flip() +
   labs(x = "Organization Type", y = "Count") +
   theme_minimal()
 ```
 
+### Programming skills
+
 ```{r}
 #| label: plot-programming-skills
-#| fig-cap: "Programming Experience Levels"
 #| fig-height: 6
 
 # Get programming level labels
@@ -208,7 +212,7 @@ prog_labels <- label_dict |>
 
 # Combine programming experience variables
 prog_data <- registration_data |> 
-  select(prog_general, prog_r) |> 
+  select(prog_general, prog_r, prog_python) |> 
   pivot_longer(everything(), 
                names_to = "skill_type", 
                values_to = "level") |> 
@@ -216,7 +220,8 @@ prog_data <- registration_data |>
   mutate(level_label = coalesce(label, level),
          skill_type = case_when(
            skill_type == "prog_general" ~ "General Programming",
-           skill_type == "prog_r" ~ "R Programming"
+           skill_type == "prog_r" ~ "R Programming",
+           skill_type == "prog_python" ~ "Python Programming"
          ))
 
 prog_data |> 
@@ -226,60 +231,44 @@ prog_data |>
   coord_flip() +
   labs(x = "Experience Level", y = "Count", fill = "Skill Type") +
   theme_minimal() +
-  scale_fill_brewer(palette = "Set2")
+  scale_fill_manual(values = owd_palette[1:3])
 ```
 
+### LLM usage
+
 ```{r}
-#| label: plot-llm-usage
-#| fig-cap: "LLM Usage Patterns"
-#| fig-height: 8
-#| eval: FALSE
+#| label: plot-llm-platforms
+#| fig-height: 6
 
-# Get LLM labels for different aspects
-llm_use_labels <- label_dict |> 
-  filter(list_name == "llm_use") |> 
-  select(name, use_label = label)
+# Process LLM platforms data - convert all to character first
+llm_platforms_data <- registration_data |> 
+  select(starts_with("llm_platforms")) |> 
+  mutate(across(everything(), as.character)) |> 
+  mutate(id = row_number()) |> 
+  pivot_longer(-id, 
+               names_to = "platform_var", 
+               values_to = "platform") |> 
+  filter(!is.na(platform) & platform != "NA") |> 
+  separate_rows(platform, sep = " ") |> 
+  filter(platform != "" & platform != "0" & platform != "1")
 
-llm_benefit_labels <- label_dict |> 
-  filter(list_name == "llm_benefit") |> 
-  select(name, benefit_label = label)
+# Get platform labels if available
+platform_labels <- label_dict |> 
+  filter(list_name == "llm_tools") |> 
+  select(name, label)
 
-llm_frequency_labels <- label_dict |> 
-  filter(list_name == "llm_frequency") |> 
-  select(name, freq_label = label)
-
-# Process LLM variables
-llm_data <- registration_data |> 
-  select(starts_with("llm_")) |> 
-  pivot_longer(everything(), 
-               names_to = "llm_aspect", 
-               values_to = "response") |> 
-  filter(!is.na(response)) |> 
-  mutate(llm_aspect = str_remove(llm_aspect, "llm_")) |> 
-  left_join(llm_use_labels, by = c("response" = "name")) |> 
-  left_join(llm_benefit_labels, by = c("response" = "name")) |> 
-  left_join(llm_frequency_labels, by = c("response" = "name")) |> 
-  mutate(response_label = coalesce(use_label, benefit_label, freq_label, response))
-
-llm_data |> 
-  count(llm_aspect, response_label) |> 
-  ggplot(aes(x = reorder(response_label, n), y = n)) +
-  geom_col(fill = "navy") +
+# Count and plot platform usage - top 10 with ties
+llm_platforms_data |> 
+  count(platform) |> 
+  left_join(platform_labels, by = c("platform" = "name")) |> 
+  mutate(platform_label = coalesce(label, platform),
+         rank = min_rank(desc(n))) |> 
+  filter(rank <= 10) |>  # This will include ties at rank 10
+  ggplot(aes(x = reorder(platform_label, n), y = n)) +
+  geom_col(fill = owd_palette[2]) +
   coord_flip() +
-  facet_wrap(~llm_aspect, scales = "free", ncol = 2) +
-  labs(x = "", y = "Count") +
-  theme_minimal() +
-  theme(strip.text = element_text(size = 10, face = "bold"))
+  labs(x = "LLM Platform", y = "Number of Users",
+       title = "Top 10 LLM Platforms Used by Participants") +
+  theme_minimal()
 ```
 
-## Results
-
-```{r}
-#| label: results
-
-# Display results
-```
-
-## Conclusions
-
-Summary of findings and conclusions.
