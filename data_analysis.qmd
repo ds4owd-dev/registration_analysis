@@ -63,6 +63,7 @@ registration_data <- raw_data |>
          org_type,
          prog_general,
          prog_r,
+         prog_python,
          starts_with("llm_platforms"))
 
 # starts_with("llm_") & !starts_with("llm_platforms")
@@ -98,7 +99,7 @@ registration_data |>
 
 # Get age group labels
 age_labels <- label_dict |> 
-  filter(list_name == "age_group") |> 
+  filter(list_name == "list_age_group") |> 
   select(name, label)
 
 registration_data |> 
@@ -232,6 +233,7 @@ prog_data |>
 #| label: plot-llm-usage
 #| fig-cap: "LLM Usage Patterns"
 #| fig-height: 8
+#| eval: FALSE
 
 # Get LLM labels for different aspects
 llm_use_labels <- label_dict |> 
