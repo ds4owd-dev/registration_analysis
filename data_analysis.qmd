@@ -79,7 +79,7 @@ gender_labels <- label_dict |>
   filter(list_name == "list_gender") |> 
   select(name, label)
 
-registration_data |> 
+plot_gender <- registration_data |> 
   count(gender) |> 
   left_join(gender_labels, by = c("gender" = "name")) |> 
   mutate(gender_label = coalesce(label, gender)) |> 
@@ -88,6 +88,8 @@ registration_data |>
   coord_flip() +
   labs(x = "Gender", y = "Count") +
   theme_minimal()
+
+print(plot_gender)
 ```
 
 ### Age group
@@ -100,7 +102,7 @@ age_labels <- label_dict |>
   filter(list_name == "list_age_group") |> 
   select(name, label)
 
-registration_data |> 
+plot_age <- registration_data |> 
   count(age_group) |> 
   left_join(age_labels, by = c("age_group" = "name")) |> 
   mutate(age_label = coalesce(label, age_group)) |> 
@@ -109,6 +111,8 @@ registration_data |>
   coord_flip() +
   labs(x = "Age Group", y = "Count") +
   theme_minimal()
+
+print(plot_age)
 ```
 
 ### Country of residence
@@ -121,7 +125,7 @@ country_labels <- label_dict |>
   filter(list_name == "countries") |> 
   select(name, label)
 
-registration_data |> 
+plot_country <- registration_data |> 
   count(country_residence) |> 
   left_join(country_labels, by = c("country_residence" = "name")) |> 
   mutate(country_name = coalesce(label, country_residence),
@@ -133,6 +137,8 @@ registration_data |>
   labs(x = "Country", y = "Count", 
        title = "Top 10 Countries") +
   theme_minimal()
+
+print(plot_country)
 ```
 
 ### Education level
@@ -146,7 +152,7 @@ education_labels <- label_dict |>
   select(name, label) |> 
   mutate(label = str_remove(label, "\\s*\\(.*\\)"))
 
-registration_data |> 
+plot_education <- registration_data |> 
   count(education) |> 
   left_join(education_labels, by = c("education" = "name")) |> 
   mutate(education_label = coalesce(label, education)) |> 
@@ -155,6 +161,8 @@ registration_data |>
   coord_flip() +
   labs(x = "Education Level", y = "Count") +
   theme_minimal()
+
+print(plot_education)
 ```
 
 ### Employment situation
@@ -167,7 +175,7 @@ employment_labels <- label_dict |>
   filter(list_name == "employment_status") |> 
   select(name, label)
 
-registration_data |> 
+plot_employment <- registration_data |> 
   count(employment_situation) |> 
   left_join(employment_labels, by = c("employment_situation" = "name")) |> 
   mutate(employment_label = coalesce(label, employment_situation)) |> 
@@ -176,6 +184,8 @@ registration_data |>
   coord_flip() +
   labs(x = "Employment Situation", y = "Count") +
   theme_minimal()
+
+print(plot_employment)
 ```
 
 ### Organization type
@@ -188,7 +198,7 @@ org_labels <- label_dict |>
   filter(list_name == "organisation_type") |> 
   select(name, label)
 
-registration_data |> 
+plot_org <- registration_data |> 
   count(org_type) |> 
   left_join(org_labels, by = c("org_type" = "name")) |> 
   mutate(org_label = coalesce(label, org_type)) |> 
@@ -197,6 +207,8 @@ registration_data |>
   coord_flip() +
   labs(x = "Organization Type", y = "Count") +
   theme_minimal()
+
+print(plot_org)
 ```
 
 ### Programming skills
@@ -224,7 +236,7 @@ prog_data <- registration_data |>
            skill_type == "prog_python" ~ "Python Programming"
          ))
 
-prog_data |> 
+plot_programming <- prog_data |> 
   count(skill_type, level_label) |> 
   ggplot(aes(x = reorder(level_label, n), y = n, fill = skill_type)) +
   geom_col(position = "dodge") +
@@ -232,6 +244,8 @@ prog_data |>
   labs(x = "Experience Level", y = "Count", fill = "Skill Type") +
   theme_minimal() +
   scale_fill_manual(values = owd_palette[1:3])
+
+print(plot_programming)
 ```
 
 ### LLM usage
@@ -258,7 +272,7 @@ platform_labels <- label_dict |>
   select(name, label)
 
 # Count and plot platform usage - top 10 with ties
-llm_platforms_data |> 
+plot_llm_platforms <- llm_platforms_data |> 
   count(platform) |> 
   left_join(platform_labels, by = c("platform" = "name")) |> 
   mutate(platform_label = coalesce(label, platform),
@@ -270,5 +284,122 @@ llm_platforms_data |>
   labs(x = "LLM Platform", y = "Number of Users",
        title = "Top 10 LLM Platforms Used by Participants") +
   theme_minimal()
+
+print(plot_llm_platforms)
 ```
 
+## Storytelling
+
+```{r}
+#| label: data-facts
+#| include: false
+
+# Total registrations
+total_registrations <- nrow(registration_data)
+
+# Top countries
+country_counts <- registration_data |> 
+  count(country_residence) |> 
+  left_join(label_dict |> 
+            filter(list_name == "countries") |> 
+            select(name, label), 
+            by = c("country_residence" = "name")) |> 
+  mutate(country_name = coalesce(label, country_residence)) |> 
+  arrange(desc(n))
+
+top1_country <- country_counts$country_name[1]
+top1_count <- country_counts$n[1]
+top2_country <- country_counts$country_name[2]
+top2_count <- country_counts$n[2]
+top3_country <- country_counts$country_name[3]
+top3_count <- country_counts$n[3]
+
+# Gender diversity
+gender_counts <- registration_data |> 
+  count(gender) |> 
+  mutate(percent = round(n/sum(n) * 100))
+
+female_percent <- gender_counts |> 
+  filter(gender == "woman") |> 
+  pull(percent)
+
+# Programming experience
+prog_r_experience <- registration_data |> 
+  count(prog_r) |> 
+  left_join(label_dict |> 
+            filter(list_name == "programming_exp") |> 
+            select(name, label), 
+            by = c("prog_r" = "name")) |> 
+  mutate(experience_level = coalesce(label, prog_r),
+         percent = round(n/sum(n) * 100))
+
+r_beginners <- prog_r_experience |> 
+  filter(prog_r %in% c("none", "beginner")) |> 
+  summarise(total_percent = sum(percent)) |> 
+  pull(total_percent)
+
+# Organization diversity
+org_diversity <- registration_data |> 
+  count(org_type) |> 
+  nrow()
+
+# Age diversity
+age_range <- registration_data |> 
+  count(age_group) |> 
+  left_join(label_dict |> 
+            filter(list_name == "list_age_group") |> 
+            select(name, label), 
+            by = c("age_group" = "name")) |> 
+  mutate(age_label = coalesce(label, age_group))
+
+most_common_age <- age_range |> 
+  slice_max(n) |> 
+  pull(age_label)
+
+# Education levels
+education_high <- registration_data |> 
+  count(education) |> 
+  mutate(percent = round(n/sum(n) * 100)) |> 
+  filter(education %in% c("master", "phd")) |> 
+  summarise(total = sum(percent)) |> 
+  pull(total)
+
+# LLM usage stats
+llm_platforms_summary <- registration_data |> 
+  select(starts_with("llm_platforms")) |> 
+  mutate(across(everything(), as.character)) |> 
+  mutate(id = row_number()) |> 
+  pivot_longer(-id, 
+               names_to = "platform_var", 
+               values_to = "platform") |> 
+  filter(!is.na(platform) & platform != "NA") |> 
+  separate_rows(platform, sep = " ") |> 
+  filter(platform != "" & platform != "0" & platform != "1") |> 
+  count(platform) |> 
+  left_join(label_dict |> 
+            filter(list_name == "llm_tools") |> 
+            select(name, label), 
+            by = c("platform" = "name")) |> 
+  mutate(platform_label = coalesce(label, platform),
+         platform_label_clean = str_remove(platform_label, "\\s*\\(.*\\)")) |> 
+  arrange(desc(n))
+
+top_llm_tools <- paste(head(llm_platforms_summary$platform_label_clean, 3), collapse = ", ")
+llm_users_percent <- round(sum(!is.na(registration_data$llm_platforms)) / nrow(registration_data) * 100)
+```
+
+🌍 **Data Science for openwashdata: Building a Global Community!** 
+
+We're thrilled to announce **`r total_registrations` registrations** from passionate learners worldwide who are ready to transform water, sanitation, and hygiene data into actionable insights! 💧📊
+
+Registrations are still open: https://ee-eu.kobotoolbox.org/single/7V3qeDYD
+
+**🗺️ Global reach, diverse perspectives:** Our participants span continents, with `r top1_country` leading the way (`r top1_count` ), followed by strong representation from `r top2_country` (`r top2_count`) and `r top3_country` (`r top3_count`). We're happy to see a strong female participation `r female_percent`%. You're creating an inclusive learning environment where diverse voices will enrich our experience. 🤝
+
+**📚 Meeting learners at every level:** While `r education_high`% of participants hold advanced degrees, `r r_beginners`% are beginners in R programming. This mix creates a unique learning environment where everyone brings valuable perspectives - whether you're taking your first steps in coding or bringing years of WASH expertise ready to add data science to your toolkit. 💻✨
+
+**🤖 AI-powered learning:** With `r llm_users_percent`% of participants already using AI tools for coding (most popular: `r top_llm_tools`), we're excited to include our bonus module: **"Use of AI for coding support"**. This module will help all participants - from beginners to experienced coders - leverage AI tools effectively and responsibly in their data science journey.
+
+Join this vibrant community committed to using data science for open research and data. Together, we're building the knowledge to tackle water and sanitation challenges. 💪🌊
+
+#DataScience #WASH #OpenData #OpenScience #RStats 
