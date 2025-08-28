@@ -1,0 +1,1 @@
+This repository contains a descriptive and exploratory analysis of the data collected through the registration form for the course [Data Science for Open WASH data course](https://ds4owd-002.github.io/website/).
