@@ -2,9 +2,11 @@
 title: "Data Analysis"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
-This document contains a descriptive and exploratory analysis of the data collected for the [Data Science for Open WASH data course](https://ds4owd-002.github.io/website/) registration form. 
+This document contains a descriptive and exploratory analysis of the data collected for the [Data Science for Open WASH data course](https://ds4owd-002.github.io/website/) registration form.
 
 ```{r}
 #| label: setup
@@ -27,7 +29,6 @@ library(labelled)
 owd_palette <- c("#5b195b", "#9b2c60", "#ce525b",
                  "#f08453", "#ffbd54", "#f9f871")
 ```
-
 
 ```{r}
 #| label: load-data
@@ -203,6 +204,13 @@ print(plot_employment)
 ```{r}
 #| label: plot-org-type
 
+# Identify NAs for org_type.
+# Result: NAs for org_type are people that are not employed
+
+registration_data |> 
+  filter(is.na(org_type)) |> 
+  count(employment_situation)
+
 # Get organization type labels
 org_labels <- label_dict |> 
   filter(list_name == "organisation_type") |> 
@@ -223,7 +231,7 @@ plot_org <- registration_data |>
 print(plot_org)
 ```
 
-### Programming skills
+## Programming skills
 
 ```{r}
 #| label: plot-programming-skills
@@ -404,7 +412,7 @@ top_llm_tools <- paste(head(llm_platforms_summary$platform_label_clean, 3), coll
 llm_users_percent <- round(sum(!is.na(registration_data$llm_platforms)) / nrow(registration_data) * 100)
 ```
 
-🌍 **Data Science for openwashdata: Building a Global Community!** 
+🌍 **Data Science for openwashdata: Building a Global Community!**
 
 We're thrilled to announce **`r total_registrations` registrations** from passionate learners worldwide who are ready to transform water, sanitation, and hygiene data into actionable insights! 💧📊
 
@@ -418,4 +426,4 @@ Registrations are still open: https://ee-eu.kobotoolbox.org/single/7V3qeDYD
 
 Join this vibrant community committed to using data science for open research and data. Together, we're building the knowledge to tackle water and sanitation challenges. 💪🌊
 
-#DataScience #WASH #OpenData #OpenScience #RStats 
+#DataScience #WASH #OpenData #OpenScience #RStats
