@@ -1,12 +1,10 @@
 ---
-title: "Data Analysis"
+title: "🌍 Data Science for openwashdata: Building a Global Community!"
 format: html
-editor: visual
+editor: source
 editor_options: 
   chunk_output_type: console
 ---
-
-This document contains a descriptive and exploratory analysis of the data collected for the [Data Science for Open WASH data course](https://ds4owd-002.github.io/website/) registration form.
 
 ```{r}
 #| label: setup
@@ -50,6 +48,7 @@ label_dict <- read_xlsx("registration_form.xlsx",
 
 ```{r}
 #| label: data-processing
+#| include: false
 
 registration_data <- raw_data |> 
   select(github_username,
@@ -66,260 +65,6 @@ registration_data <- raw_data |>
   distinct(github_username, .keep_all = TRUE)
 
 # starts_with("llm_") & !starts_with("llm_platforms")
-```
-
-## Categorical Variables Distribution
-
-### Gender
-
-```{r}
-#| label: plot-gender
-
-# Get gender labels
-gender_labels <- label_dict |> 
-  filter(list_name == "list_gender") |> 
-  select(name, label)
-
-plot_gender <- registration_data |> 
-  count(gender) |> 
-  left_join(gender_labels, by = c("gender" = "name")) |> 
-  mutate(gender_label = coalesce(label, gender)) |> 
-  ggplot(aes(x = reorder(gender_label, n), y = n)) +
-  geom_col(fill = owd_palette[1]) +
-  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
-  coord_flip() +
-  labs(x = "Gender", y = "Count") +
-  theme_minimal() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-
-print(plot_gender)
-```
-
-### Age group
-
-```{r}
-#| label: plot-age
-
-# Get age group labels
-age_labels <- label_dict |> 
-  filter(list_name == "list_age_group") |> 
-  select(name, label)
-
-plot_age <- registration_data |> 
-  count(age_group) |> 
-  left_join(age_labels, by = c("age_group" = "name")) |> 
-  mutate(age_label = coalesce(label, age_group)) |> 
-  ggplot(aes(x = reorder(age_label, n), y = n)) +
-  geom_col(fill = owd_palette[2]) +
-  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
-  coord_flip() +
-  labs(x = "Age Group", y = "Count") +
-  theme_minimal() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-
-print(plot_age)
-```
-
-### Country of residence
-
-```{r}
-#| label: plot-country
-
-# Get country labels
-country_labels <- label_dict |> 
-  filter(list_name == "countries") |> 
-  select(name, label)
-
-plot_country <- registration_data |> 
-  count(country_residence) |> 
-  left_join(country_labels, by = c("country_residence" = "name")) |> 
-  mutate(country_name = coalesce(label, country_residence),
-         rank = min_rank(desc(n))) |> 
-  filter(rank <= 10) |>  # Show top 10 countries with ties
-  ggplot(aes(x = reorder(country_name, n), y = n)) +
-  geom_col(fill = owd_palette[3]) +
-  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
-  coord_flip() +
-  labs(x = "Country", y = "Count", 
-       title = "Top 10 Countries") +
-  theme_minimal() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-
-print(plot_country)
-```
-
-### Education level
-
-```{r}
-#| label: plot-education
-
-# Get education labels and remove text in parentheses
-education_labels <- label_dict |> 
-  filter(list_name == "education_level") |> 
-  select(name, label) |> 
-  mutate(label = str_remove(label, "\\s*\\(.*\\)"))
-
-plot_education <- registration_data |> 
-  count(education) |> 
-  left_join(education_labels, by = c("education" = "name")) |> 
-  mutate(education_label = coalesce(label, education)) |> 
-  ggplot(aes(x = reorder(education_label, n), y = n)) +
-  geom_col(fill = owd_palette[4]) +
-  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
-  coord_flip() +
-  labs(x = "Education Level", y = "Count") +
-  theme_minimal() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-
-print(plot_education)
-```
-
-### Employment situation
-
-```{r}
-#| label: plot-employment
-
-# Get employment situation labels
-employment_labels <- label_dict |> 
-  filter(list_name == "employment_status") |> 
-  select(name, label)
-
-plot_employment <- registration_data |> 
-  count(employment_situation) |> 
-  left_join(employment_labels, by = c("employment_situation" = "name")) |> 
-  mutate(employment_label = coalesce(label, employment_situation)) |> 
-  ggplot(aes(x = reorder(employment_label, n), y = n)) +
-  geom_col(fill = owd_palette[5]) +
-  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
-  coord_flip() +
-  labs(x = "Employment Situation", y = "Count") +
-  theme_minimal() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-
-print(plot_employment)
-```
-
-### Organization type
-
-```{r}
-#| label: plot-org-type
-
-# Identify NAs for org_type.
-# Result: NAs for org_type are people that are not employed
-
-registration_data |> 
-  filter(is.na(org_type)) |> 
-  count(employment_situation)
-
-# Get organization type labels
-org_labels <- label_dict |> 
-  filter(list_name == "organisation_type") |> 
-  select(name, label)
-
-plot_org <- registration_data |> 
-  count(org_type) |> 
-  left_join(org_labels, by = c("org_type" = "name")) |> 
-  mutate(org_label = coalesce(label, org_type)) |> 
-  ggplot(aes(x = reorder(org_label, n), y = n)) +
-  geom_col(fill = owd_palette[6]) +
-  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
-  coord_flip() +
-  labs(x = "Organization Type", y = "Count") +
-  theme_minimal() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-
-print(plot_org)
-```
-
-## Programming skills
-
-```{r}
-#| label: plot-programming-skills
-#| fig-height: 6
-
-# Get programming level labels
-prog_labels <- label_dict |> 
-  filter(list_name == "programming_exp") |> 
-  select(name, label)
-
-# Combine programming experience variables
-prog_data <- registration_data |> 
-  select(prog_general, prog_r, prog_python) |> 
-  pivot_longer(everything(), 
-               names_to = "skill_type", 
-               values_to = "level") |> 
-  left_join(prog_labels, by = c("level" = "name")) |> 
-  mutate(level_label = coalesce(label, level),
-         skill_type = case_when(
-           skill_type == "prog_general" ~ "General Programming",
-           skill_type == "prog_r" ~ "R Programming",
-           skill_type == "prog_python" ~ "Python Programming"
-         ))
-
-plot_programming <- prog_data |> 
-  count(skill_type, level_label) |> 
-  ggplot(aes(x = reorder(level_label, n), y = n, fill = skill_type)) +
-  geom_col(position = "dodge") +
-  geom_text(aes(label = n), position = position_dodge(width = 0.9), hjust = -0.2, size = 3) +
-  coord_flip() +
-  labs(x = "Experience Level", y = "Count", fill = "Skill Type") +
-  theme_minimal() +
-  scale_fill_manual(values = owd_palette[1:3]) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-
-print(plot_programming)
-```
-
-### LLM usage
-
-```{r}
-#| label: plot-llm-platforms
-#| fig-height: 6
-
-# Process LLM platforms data - convert all to character first
-llm_platforms_data <- registration_data |> 
-  select(starts_with("llm_platforms")) |> 
-  mutate(across(everything(), as.character)) |> 
-  mutate(id = row_number()) |> 
-  pivot_longer(-id, 
-               names_to = "platform_var", 
-               values_to = "platform") |> 
-  filter(!is.na(platform) & platform != "NA") |> 
-  separate_rows(platform, sep = " ") |> 
-  filter(platform != "" & platform != "0" & platform != "1")
-
-# Get platform labels if available
-platform_labels <- label_dict |> 
-  filter(list_name == "llm_tools") |> 
-  select(name, label)
-
-# Count and plot platform usage - top 10 with ties
-plot_llm_platforms <- llm_platforms_data |> 
-  count(platform) |> 
-  left_join(platform_labels, by = c("platform" = "name")) |> 
-  mutate(platform_label = coalesce(label, platform),
-         rank = min_rank(desc(n))) |> 
-  filter(rank <= 10) |>  # This will include ties at rank 10
-  ggplot(aes(x = reorder(platform_label, n), y = n)) +
-  geom_col(fill = owd_palette[2]) +
-  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
-  coord_flip() +
-  labs(x = "LLM Platform", y = "Number of Users",
-       title = "Top 10 LLM Platforms Used by Participants") +
-  theme_minimal() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-
-print(plot_llm_platforms)
-```
-
-## Storytelling
-
-```{r}
-#| label: data-facts
-#| include: false
-
-# Total registrations
-total_registrations <- nrow(registration_data)
 
 # Top countries
 country_counts <- registration_data |> 
@@ -384,9 +129,16 @@ most_common_age <- age_range |>
 education_high <- registration_data |> 
   count(education) |> 
   mutate(percent = round(n/sum(n) * 100)) |> 
-  filter(education %in% c("master", "phd")) |> 
+  filter(education %in% c("master", "doctorate")) |> 
   summarise(total = sum(percent)) |> 
   pull(total)
+
+# Employment statistics
+fulltime_percent <- registration_data |> 
+  count(employment_situation) |> 
+  mutate(percent = round(n/sum(n) * 100)) |> 
+  filter(employment_situation == "employed_fulltime") |> 
+  pull(percent)
 
 # LLM usage stats
 llm_platforms_summary <- registration_data |> 
@@ -412,18 +164,265 @@ top_llm_tools <- paste(head(llm_platforms_summary$platform_label_clean, 3), coll
 llm_users_percent <- round(sum(!is.na(registration_data$llm_platforms)) / nrow(registration_data) * 100)
 ```
 
-🌍 **Data Science for openwashdata: Building a Global Community!**
+We're thrilled to have received **`r nrow(registration_data)` registrations** so far from passionate learners worldwide who are ready to transform water, sanitation, and hygiene data into actionable insights! 📊
 
-We're thrilled to announce **`r total_registrations` registrations** from passionate learners worldwide who are ready to transform water, sanitation, and hygiene data into actionable insights! 💧📊
+Registrations are still open: [https://ee-eu.kobotoolbox.org/single/7V3qeDYD]()
 
-Registrations are still open: https://ee-eu.kobotoolbox.org/single/7V3qeDYD
+```{r}
+#| label: plot-country
 
-**🗺️ Global reach, diverse perspectives:** Our participants span continents, with `r top1_country` leading the way (`r top1_count` ), followed by strong representation from `r top2_country` (`r top2_count`) and `r top3_country` (`r top3_count`). We're happy to see a strong female participation `r female_percent`%. You're creating an inclusive learning environment where diverse voices will enrich our experience. 🤝
+# Get country labels
+country_labels <- label_dict |> 
+  filter(list_name == "countries") |> 
+  select(name, label)
 
-**📚 Meeting learners at every level:** While `r education_high`% of participants hold advanced degrees, `r r_beginners`% are beginners in R programming. This mix creates a unique learning environment where everyone brings valuable perspectives - whether you're taking your first steps in coding or bringing years of WASH expertise ready to add data science to your toolkit. 💻✨
+plot_country <- registration_data |> 
+  count(country_residence) |> 
+  left_join(country_labels, by = c("country_residence" = "name")) |> 
+  mutate(country_name = coalesce(label, country_residence),
+         rank = min_rank(desc(n))) |> 
+  filter(rank <= 10) |>  
+  ggplot(aes(x = reorder(country_name, n), y = n)) +
+  geom_col(fill = owd_palette[1]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5, fontface = "bold") +
+  coord_flip() +
+  labs(x = "Country", 
+       y = "Number of registrations", 
+       title = "Top 10 Countries") +
+  theme_minimal() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
-**🤖 AI-powered learning:** With `r llm_users_percent`% of participants already using AI tools for coding (most popular: `r top_llm_tools`), we're excited to include our bonus module: **"Use of AI for coding support"**. This module will help all participants - from beginners to experienced coders - leverage AI tools effectively and responsibly in their data science journey.
+print(plot_country)
+```
+
+**🗺 Global reach, diverse perspectives:** Our participants span continents, with African countries leading the way. We have `r top1_count` registrations from `r top1_country`, followed by strong representation from `r top2_country` (`r top2_count` registrations) and `r top3_country` (`r top3_count` registrations). Also very exciting to see a strong female participation with `r female_percent`% of the registrations. You're creating an inclusive learning environment where diverse voices will enrich our experience. 🤝
+
+```{r}
+#| label: plot-population-pyramid
+#| fig-width: 8
+#| fig-height: 6
+
+# Get labels for both age and gender
+age_labels_pyramid <- label_dict |> 
+  filter(list_name == "list_age_group") |> 
+  select(name, label)
+
+gender_labels_pyramid <- label_dict |> 
+  filter(list_name == "list_gender") |> 
+  select(name, label)
+
+# Prepare data for population pyramid - collapse older age groups
+pyramid_data <- registration_data |> 
+  filter(!is.na(gender) & !is.na(age_group)) |> 
+  filter(gender %in% c("man", "woman")) |> 
+  mutate(age_group_collapsed = case_when(
+    age_group %in% c("55_64", "65_or_older") ~ "55_older",
+    TRUE ~ age_group
+  )) |> 
+  count(age_group_collapsed, gender) |> 
+  left_join(age_labels_pyramid, by = c("age_group_collapsed" = "name")) |> 
+  left_join(gender_labels_pyramid, by = c("gender" = "name")) |> 
+  mutate(age_label = case_when(
+    age_group_collapsed == "55_older" ~ "55 or older",
+    TRUE ~ coalesce(label.x, age_group_collapsed)
+  ),
+         gender_label = coalesce(label.y, gender),
+         n_adjusted = ifelse(gender == "man", -n, n))
+
+# Create population pyramid
+plot_pyramid <- pyramid_data |> 
+  ggplot(aes(x = age_label, y = n_adjusted, fill = gender_label)) +
+  geom_col(width = 0.8) +
+  geom_text(aes(label = abs(n_adjusted), 
+                y = n_adjusted + ifelse(gender == "man", -0.5, 0.5)), 
+            size = 3.5, fontface = "bold") +
+  coord_flip() +
+  scale_y_continuous(labels = function(x) abs(x),
+                     expand = expansion(mult = c(0.15, 0.15))) +
+  scale_fill_manual(values = c("Man" = owd_palette[1], 
+                               "Woman" = owd_palette[3])) +
+  labs(x = "Age Group", 
+       y = "Number of registrations", 
+       fill = "",
+       title = "Age Distribution by Gender") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5))
+
+print(plot_pyramid)
+```
+
+**📚 Meeting learners at every level:** While `r education_high`% of participants hold advanced degrees and `r fulltime_percent`% are employed full-time, `r r_beginners`% are beginners in R programming. This mix creates a unique learning environment where everyone brings valuable perspectives - whether you're taking your first steps in coding or bringing years of WASH expertise ready to add data science to your toolkit. 💻✨
+
+```{r}
+#| label: plot-education-employment
+#| layout-ncol: 2
+#| fig-width: 6
+#| fig-height: 5
+
+# Get education labels and remove text in parentheses, add line breaks
+education_labels <- label_dict |> 
+  filter(list_name == "education_level") |> 
+  select(name, label) |> 
+  mutate(label = str_remove(label, "\\s*\\(.*\\)"),
+         label = case_when(
+           str_detect(label, "No formal") ~ "No formal\neducation",
+           str_detect(label, "Primary") ~ "Primary\neducation",
+           str_detect(label, "Lower secondary") ~ "Lower secondary\neducation",
+           str_detect(label, "Upper secondary") ~ "Upper secondary\neducation",
+           str_detect(label, "Postsecondary non-tertiary") ~ "Postsecondary\nnon-tertiary",
+           str_detect(label, "Bachelor") ~ "Bachelor's\ndegree",
+           str_detect(label, "Master") ~ "Master's\ndegree",
+           str_detect(label, "Doctorate") ~ "Doctorate\nor higher",
+           TRUE ~ label
+         ))
+
+plot_education <- registration_data |> 
+  count(education) |> 
+  left_join(education_labels, by = c("education" = "name")) |> 
+  mutate(education_label = coalesce(label, education)) |> 
+  ggplot(aes(x = reorder(education_label, n), y = n)) +
+  geom_col(fill = owd_palette[4]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5, fontface = "bold") +
+  coord_flip() +
+  labs(x = "", y = "Number of registrations", title = "Education Level") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 11)) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
+
+# Get employment situation labels and add line breaks
+employment_labels <- label_dict |> 
+  filter(list_name == "employment_status") |> 
+  select(name, label) |> 
+  mutate(label = case_when(
+    str_detect(label, "Employed full-time") ~ "Employed\nfull-time",
+    str_detect(label, "Employed part-time") ~ "Employed\npart-time",
+    str_detect(label, "Unemployed and looking") ~ "Unemployed and\nlooking for work",
+    str_detect(label, "Unemployed and not") ~ "Unemployed and\nnot looking for work",
+    TRUE ~ label
+  ))
+
+# Process employment data: collapse unemployed categories, then small categories
+employment_data <- registration_data |> 
+  count(employment_situation) |> 
+  left_join(employment_labels, by = c("employment_situation" = "name")) |> 
+  mutate(employment_label = coalesce(label, employment_situation),
+         # First collapse unemployed categories
+         employment_collapsed = case_when(
+           str_detect(employment_situation, "unemployed") ~ "Unemployed",
+           TRUE ~ employment_label
+         )) |> 
+  # Group by collapsed categories and sum counts
+  group_by(employment_collapsed) |> 
+  summarise(n = sum(n)) |> 
+  ungroup() |> 
+  # Then collapse categories with count < 2 into Other
+  mutate(employment_final = ifelse(n < 2, "Other", employment_collapsed)) |> 
+  group_by(employment_final) |> 
+  summarise(n = sum(n)) |> 
+  ungroup()
+
+plot_employment <- employment_data |> 
+  ggplot(aes(x = reorder(employment_final, n), y = n)) +
+  geom_col(fill = owd_palette[5]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5, fontface = "bold") +
+  coord_flip() +
+  labs(x = "", y = "Number of registrations", title = "Employment Situation") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 11)) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
+
+print(plot_education)
+print(plot_employment)
+```
+
+
+```{r}
+#| label: plot-programming-skills
+#| fig-height: 6
+
+# Get programming level labels and add line breaks
+prog_labels <- label_dict |> 
+  filter(list_name == "programming_exp") |> 
+  select(name, label) |> 
+  mutate(label = case_when(
+    str_detect(label, "I have written a few") ~ "I have written\na few lines",
+    str_detect(label, "I have written programs") ~ "I have written\nprograms for own use",
+    str_detect(label, "I have written and maintained") ~ "I have written and\nmaintained larger software",
+    TRUE ~ label
+  ))
+
+# Combine programming experience variables
+prog_data <- registration_data |> 
+  select(prog_general, prog_r, prog_python) |> 
+  pivot_longer(everything(), 
+               names_to = "skill_type", 
+               values_to = "level") |> 
+  left_join(prog_labels, by = c("level" = "name")) |> 
+  mutate(level_label = coalesce(label, level),
+         skill_type = case_when(
+           skill_type == "prog_general" ~ "General Programming",
+           skill_type == "prog_r" ~ "R Programming",
+           skill_type == "prog_python" ~ "Python Programming"
+         ))
+
+plot_programming <- prog_data |> 
+  count(skill_type, level_label) |> 
+  ggplot(aes(x = reorder(level_label, n), y = n, fill = skill_type)) +
+  geom_col(position = "dodge") +
+  geom_text(aes(label = n), position = position_dodge(width = 0.9), hjust = -0.2, size = 3, fontface = "bold") +
+  coord_flip() +
+  labs(x = "Experience Level", y = "Number of registrations", fill = "Skill Type") +
+  theme_minimal() +
+  scale_fill_manual(values = owd_palette[1:3]) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
+
+print(plot_programming)
+```
+
+**🤖 AI-powered learning:** With `r llm_users_percent`% of participants already using AI tools (most popular: `r top_llm_tools`), we're excited to include our bonus module: **"Use of AI for coding support"**. This module will help all participants - from beginners to experienced coders - leverage AI tools effectively and responsibly in their data science journey.
+
+```{r}
+#| label: plot-llm-platforms
+#| fig-height: 6
+
+# Process LLM platforms data - convert all to character first
+llm_platforms_data <- registration_data |> 
+  select(starts_with("llm_platforms")) |> 
+  mutate(across(everything(), as.character)) |> 
+  mutate(id = row_number()) |> 
+  pivot_longer(-id, 
+               names_to = "platform_var", 
+               values_to = "platform") |> 
+  filter(!is.na(platform) & platform != "NA") |> 
+  separate_rows(platform, sep = " ") |> 
+  filter(platform != "" & platform != "0" & platform != "1")
+
+# Get platform labels if available
+platform_labels <- label_dict |> 
+  filter(list_name == "llm_tools") |> 
+  select(name, label)
+
+# Count and plot platform usage - top 10 with ties
+plot_llm_platforms <- llm_platforms_data |> 
+  count(platform) |> 
+  left_join(platform_labels, by = c("platform" = "name")) |> 
+  mutate(platform_label = coalesce(label, platform),
+         rank = min_rank(desc(n))) |> 
+  filter(rank <= 10) |>  # This will include ties at rank 10
+  ggplot(aes(x = reorder(platform_label, n), y = n)) +
+  geom_col(fill = owd_palette[2]) +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5, fontface = "bold") +
+  coord_flip() +
+  labs(x = "LLM Platform", y = "Number of Users",
+       title = "Top 10 LLM Platforms Used by Participants") +
+  theme_minimal() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
+
+print(plot_llm_platforms)
+```
 
 Join this vibrant community committed to using data science for open research and data. Together, we're building the knowledge to tackle water and sanitation challenges. 💪🌊
 
 #DataScience #WASH #OpenData #OpenScience #RStats
+
