@@ -26,6 +26,8 @@ library(labelled)
 # Define OWD color palette
 owd_palette <- c("#5b195b", "#9b2c60", "#ce525b",
                  "#f08453", "#ffbd54", "#f9f871")
+
+background_color <- "#f5f5f2"
 ```
 
 ```{r}
@@ -166,8 +168,6 @@ llm_users_percent <- round(sum(!is.na(registration_data$llm_platforms)) / nrow(r
 
 We're thrilled to have received **`r nrow(registration_data)` registrations** so far from passionate learners worldwide who are ready to transform water, sanitation, and hygiene data into actionable insights! 📊
 
-Registrations are still open: [https://ee-eu.kobotoolbox.org/single/7V3qeDYD]()
-
 ```{r}
 #| label: plot-country
 
@@ -252,13 +252,14 @@ plot_pyramid <- pyramid_data |>
 print(plot_pyramid)
 ```
 
-**📚 Meeting learners at every level:** While `r education_high`% of participants hold advanced degrees and `r fulltime_percent`% are employed full-time, `r r_beginners`% are beginners in R programming. This mix creates a unique learning environment where everyone brings valuable perspectives - whether you're taking your first steps in coding or bringing years of WASH expertise ready to add data science to your toolkit. 💻✨
+**📚 Meeting learners at every level:** While `r education_high`% of participants hold advanced degrees and `r fulltime_percent`% are employed full-time, `r r_beginners`% are beginners in R programming. This mix creates a unique learning environment where everyone brings valuable perspectives. Whether you're taking your first steps in coding or bringing years of WASH expertise we're ready to support you in this path of adding data science to your toolkit. 💻✨
 
 ```{r}
 #| label: plot-education-employment
 #| layout-ncol: 2
 #| fig-width: 6
 #| fig-height: 5
+#| include: false
 
 # Get education labels and remove text in parentheses, add line breaks
 education_labels <- label_dict |> 
@@ -338,6 +339,107 @@ print(plot_employment)
 
 
 ```{r}
+#| label: plot-education-stacked
+#| fig-height: 3
+#| fig-width: 10
+
+# Create alternative stacked bar plot for education level
+education_stacked_data <- registration_data |> 
+  count(education) |> 
+  left_join(education_labels, by = c("education" = "name")) |> 
+  mutate(education_label = coalesce(label, education),
+         # Collapse categories with count < 5 into Other
+         education_final = ifelse(n < 5, "Other", education_label)) |> 
+  group_by(education_final) |> 
+  summarise(n = sum(n)) |> 
+  ungroup() |> 
+  # Sort in descending order
+  arrange(desc(n)) |> 
+  mutate(education_final = factor(education_final, levels = rev(education_final)))
+
+# Create labels with both category name and percentage
+education_stacked_data <- education_stacked_data |> 
+  mutate(percent = round(n/sum(n) * 100),
+         label_text = paste0(education_final, "\n(", percent, "%)"))
+
+plot_education_stacked <- education_stacked_data |> 
+  ggplot(aes(x = "", y = n, fill = education_final)) +
+  geom_col(width = 0.3) +
+  geom_text(aes(label = label_text), 
+            position = position_stack(vjust = 0.5), 
+            size = 4, 
+            fontface = "bold",
+            color = "black",
+            lineheight = 0.9) +
+  coord_flip() +
+  labs(x = "", 
+       y = "", 
+       title = "Education Level Distribution") +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5, size = 16, margin = margin(b = -100, t = 20)),
+        plot.margin = margin(b = -100)) +
+  scale_fill_manual(values = owd_palette[3:(length(unique(education_stacked_data$education_final))+2)])
+
+print(plot_education_stacked)
+```
+
+```{r}
+#| label: plot-employment-stacked
+#| fig-height: 3
+#| fig-width: 10
+
+# Create alternative stacked bar plot for employment situation
+employment_stacked_data <- registration_data |> 
+  count(employment_situation) |> 
+  left_join(employment_labels, by = c("employment_situation" = "name")) |> 
+  mutate(employment_label = coalesce(label, employment_situation),
+         # First collapse unemployed categories
+         employment_collapsed = case_when(
+           str_detect(employment_situation, "unemployed") ~ "Unemployed",
+           TRUE ~ employment_label
+         )) |> 
+  # Group by collapsed categories and sum counts
+  group_by(employment_collapsed) |> 
+  summarise(n = sum(n)) |> 
+  ungroup() |> 
+  # Then collapse categories with count < 10 into Other
+  mutate(employment_final = ifelse(n < 10, "Other", employment_collapsed)) |> 
+  group_by(employment_final) |> 
+  summarise(n = sum(n)) |> 
+  ungroup() |> 
+  # Sort in descending order
+  arrange(desc(n)) |> 
+  mutate(employment_final = factor(employment_final, levels = rev(employment_final)))
+
+# Create labels with both category name and percentage
+employment_stacked_data <- employment_stacked_data |> 
+  mutate(percent = round(n/sum(n) * 100),
+         label_text = paste0(employment_final, "\n(", percent, "%)"))
+
+plot_employment_stacked <- employment_stacked_data |> 
+  ggplot(aes(x = "", y = n, fill = employment_final)) +
+  geom_col(width = 0.3) +
+  geom_text(aes(label = label_text), 
+            position = position_stack(vjust = 0.5), 
+            size = 4, 
+            fontface = "bold",
+            color = "black",
+            lineheight = 0.9) +
+  coord_flip() +
+  labs(x = "", 
+       y = "", 
+       title = "Employment Situation Distribution") +
+  theme_void() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5, size = 16, margin = margin(b = -100, t = 0)),
+        plot.margin = margin(b = -100)) +
+  scale_fill_manual(values = owd_palette[2:(length(unique(employment_stacked_data$employment_final))+2)])
+
+print(plot_employment_stacked)
+```
+
+```{r}
 #| label: plot-programming-skills
 #| fig-height: 6
 
@@ -361,9 +463,9 @@ prog_data <- registration_data |>
   left_join(prog_labels, by = c("level" = "name")) |> 
   mutate(level_label = coalesce(label, level),
          skill_type = case_when(
-           skill_type == "prog_general" ~ "General Programming",
-           skill_type == "prog_r" ~ "R Programming",
-           skill_type == "prog_python" ~ "Python Programming"
+           skill_type == "prog_general" ~ "General",
+           skill_type == "prog_r" ~ "R",
+           skill_type == "prog_python" ~ "Python"
          ))
 
 plot_programming <- prog_data |> 
@@ -372,8 +474,9 @@ plot_programming <- prog_data |>
   geom_col(position = "dodge") +
   geom_text(aes(label = n), position = position_dodge(width = 0.9), hjust = -0.2, size = 3, fontface = "bold") +
   coord_flip() +
-  labs(x = "Experience Level", y = "Number of registrations", fill = "Skill Type") +
+  labs(x = "Experience Level", y = "Count", fill = "", title = "Programming experience") +
   theme_minimal() +
+  theme(legend.position = "bottom") +
   scale_fill_manual(values = owd_palette[1:3]) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
@@ -422,7 +525,8 @@ plot_llm_platforms <- llm_platforms_data |>
 print(plot_llm_platforms)
 ```
 
-Join this vibrant community committed to using data science for open research and data. Together, we're building the knowledge to tackle water and sanitation challenges. 💪🌊
+Join this vibrant community committed to using data science for open research and data. Together, we're building the knowledge to tackle water and sanitation challenges. 🌊
+
+Registrations are still open: [https://ee-eu.kobotoolbox.org/single/7V3qeDYD]()
 
 #DataScience #WASH #OpenData #OpenScience #RStats
-
