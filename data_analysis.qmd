@@ -68,33 +68,28 @@ registration_data <- raw_data |>
 
 # starts_with("llm_") & !starts_with("llm_platforms")
 
-# Top countries
+# Country representation
+country_labels <- label_dict |> 
+  filter(list_name == "countries") |> 
+  select(name, label)
+
 country_counts <- registration_data |> 
   count(country_residence) |> 
-  left_join(label_dict |> 
-            filter(list_name == "countries") |> 
-            select(name, label), 
+  left_join(country_labels, 
             by = c("country_residence" = "name")) |> 
   mutate(country_name = coalesce(label, country_residence)) |> 
   arrange(desc(n))
 
-top1_country <- country_counts$country_name[1]
-top1_count <- country_counts$n[1]
-top2_country <- country_counts$country_name[2]
-top2_count <- country_counts$n[2]
-top3_country <- country_counts$country_name[3]
-top3_count <- country_counts$n[3]
-
-# Gender diversity
+# Gender representation
 gender_counts <- registration_data |> 
   count(gender) |> 
   mutate(percent = round(n/sum(n) * 100))
 
-female_percent <- gender_counts |> 
+woman_percent <- gender_counts |> 
   filter(gender == "woman") |> 
   pull(percent)
 
-# Programming experience
+# R programming experience
 prog_r_experience <- registration_data |> 
   count(prog_r) |> 
   left_join(label_dict |> 
@@ -105,14 +100,9 @@ prog_r_experience <- registration_data |>
          percent = round(n/sum(n) * 100))
 
 r_beginners <- prog_r_experience |> 
-  filter(prog_r %in% c("none", "beginner")) |> 
+  filter(prog_r %in% c("none", "few_lines")) |> 
   summarise(total_percent = sum(percent)) |> 
   pull(total_percent)
-
-# Organization diversity
-org_diversity <- registration_data |> 
-  count(org_type) |> 
-  nrow()
 
 # Age diversity
 age_range <- registration_data |> 
@@ -127,7 +117,7 @@ most_common_age <- age_range |>
   slice_max(n) |> 
   pull(age_label)
 
-# Education levels
+# Education level
 education_high <- registration_data |> 
   count(education) |> 
   mutate(percent = round(n/sum(n) * 100)) |> 
@@ -135,34 +125,35 @@ education_high <- registration_data |>
   summarise(total = sum(percent)) |> 
   pull(total)
 
-# Employment statistics
+# Employment situation
 fulltime_percent <- registration_data |> 
   count(employment_situation) |> 
   mutate(percent = round(n/sum(n) * 100)) |> 
   filter(employment_situation == "employed_fulltime") |> 
   pull(percent)
 
-# LLM usage stats
+# LLMs usage 
 llm_platforms_summary <- registration_data |> 
-  select(starts_with("llm_platforms")) |> 
-  mutate(across(everything(), as.character)) |> 
-  mutate(id = row_number()) |> 
-  pivot_longer(-id, 
-               names_to = "platform_var", 
-               values_to = "platform") |> 
-  filter(!is.na(platform) & platform != "NA") |> 
-  separate_rows(platform, sep = " ") |> 
-  filter(platform != "" & platform != "0" & platform != "1") |> 
-  count(platform) |> 
+  select(github_username, starts_with("llm_platforms_")) |>
+    rename_with(~ sub("^llm_platforms_", "", .x), 
+              starts_with("llm_platforms_")) |> 
+  pivot_longer(-github_username, 
+               names_to = "platform", # platform_var
+               values_to = "use") |> # platform
+  group_by(platform) |> 
+  summarise(n = sum(use)) |> 
+  ungroup() |> 
   left_join(label_dict |> 
             filter(list_name == "llm_tools") |> 
             select(name, label), 
             by = c("platform" = "name")) |> 
   mutate(platform_label = coalesce(label, platform),
-         platform_label_clean = str_remove(platform_label, "\\s*\\(.*\\)")) |> 
+         platform_label_clean = str_remove(platform_label, "\\s*\\(.*\\)"),
+         rank = min_rank(desc(n))) |> 
   arrange(desc(n))
 
 top_llm_tools <- paste(head(llm_platforms_summary$platform_label_clean, 3), collapse = ", ")
+
 llm_users_percent <- round(sum(!is.na(registration_data$llm_platforms)) / nrow(registration_data) * 100)
 ```
 
@@ -171,17 +162,15 @@ We're thrilled to have received **`r nrow(registration_data)` registrations** so
 ```{r}
 #| label: plot-country
 
-# Get country labels
-country_labels <- label_dict |> 
-  filter(list_name == "countries") |> 
-  select(name, label)
-
-plot_country <- registration_data |> 
+# Get country data with labels
+country_df <- registration_data |> 
   count(country_residence) |> 
   left_join(country_labels, by = c("country_residence" = "name")) |> 
   mutate(country_name = coalesce(label, country_residence),
          rank = min_rank(desc(n))) |> 
-  filter(rank <= 10) |>  
+  filter(rank <= 10)
+  
+plot_country <- country_df |> 
   ggplot(aes(x = reorder(country_name, n), y = n)) +
   geom_col(fill = owd_palette[1]) +
   geom_text(aes(label = n), hjust = -0.2, size = 3.5, fontface = "bold") +
@@ -197,36 +186,37 @@ plot_country <- registration_data |>
 print(plot_country)
 ```
 
-**🗺 Global reach, diverse perspectives:** Our participants span continents, with African countries leading the way. We have `r top1_count` registrations from `r top1_country`, followed by strong representation from `r top2_country` (`r top2_count` registrations) and `r top3_country` (`r top3_count` registrations). Also very exciting to see a strong female participation with `r female_percent`% of the registrations. You're creating an inclusive learning environment where diverse voices will enrich our experience. 🤝
+**🗺 Global reach, diverse perspectives:** Our participants span continents, with African countries leading the way. We have `r country_counts$n[1]` registrations from `r country_counts$country_name[1]`, followed by strong representation from `r country_counts$country_name[2]` (`r country_counts$n[2]` registrations), `r country_counts$country_name[3]` (`r country_counts$n[3]` registrations) and `r country_counts$country_name[4]` (`r country_counts$n[4]` registrations). Also very exciting to see a strong female participation with `r woman_percent`% of the registrations. You're creating an inclusive learning environment where diverse voices will enrich our experience. 🤝
 
 ```{r}
 #| label: plot-population-pyramid
 #| fig-width: 8
 #| fig-height: 6
 
-# Get labels for both age and gender
-age_labels_pyramid <- label_dict |> 
+# Age and gender labels
+age_labels <- label_dict |> 
   filter(list_name == "list_age_group") |> 
   select(name, label)
 
-gender_labels_pyramid <- label_dict |> 
+gender_labels <- label_dict |> 
   filter(list_name == "list_gender") |> 
   select(name, label)
 
-# Prepare data for population pyramid - collapse older age groups
+# Population pyramid data
+# the two groups corresponding to older ages were merged due to low occurence
 pyramid_data <- registration_data |> 
-  filter(!is.na(gender) & !is.na(age_group)) |> 
-  filter(gender %in% c("man", "woman")) |> 
-  mutate(age_group_collapsed = case_when(
+  filter(age_group != "prefer_not_to_say_age",
+         gender %in% c("man", "woman")) |> 
+  mutate(age_group = case_when(
     age_group %in% c("55_64", "65_or_older") ~ "55_older",
     TRUE ~ age_group
   )) |> 
-  count(age_group_collapsed, gender) |> 
-  left_join(age_labels_pyramid, by = c("age_group_collapsed" = "name")) |> 
-  left_join(gender_labels_pyramid, by = c("gender" = "name")) |> 
+  count(age_group, gender) |> 
+  left_join(age_labels, by = c("age_group" = "name")) |> 
+  left_join(gender_labels, by = c("gender" = "name")) |> 
   mutate(age_label = case_when(
-    age_group_collapsed == "55_older" ~ "55 or older",
-    TRUE ~ coalesce(label.x, age_group_collapsed)
+    age_group == "55_older" ~ "55 or older",
+    TRUE ~ coalesce(label.x, age_group)
   ),
          gender_label = coalesce(label.y, gender),
          n_adjusted = ifelse(gender == "man", -n, n))
@@ -351,25 +341,38 @@ print(plot_employment)
 #| fig-height: 3
 #| fig-width: 10
 
-# Create alternative stacked bar plot for education level
+# Modified labels for improve readability in plots
+education_labels <- label_dict |> 
+  filter(list_name == "education_level") |> 
+  select(name, label) |> 
+  mutate(label = str_remove(label, "\\s*\\(.*\\)"),
+         label = case_when(
+           str_detect(label, "No formal") ~ "No formal\neducation",
+           str_detect(label, "Primary") ~ "Primary\neducation",
+           str_detect(label, "Lower secondary") ~ "Lower secondary\neducation",
+           str_detect(label, "Upper secondary") ~ "Upper secondary\neducation",
+           str_detect(label, "Postsecondary non-tertiary") ~ "Postsecondary\nnon-tertiary",
+           str_detect(label, "Bachelor") ~ "Bachelor's\ndegree",
+           str_detect(label, "Master") ~ "Master's\ndegree",
+           str_detect(label, "Doctorate") ~ "Doctorate\nor higher",
+           TRUE ~ label
+         ))
+
+# Dataframe for stacked horizontal bar
 education_stacked_data <- registration_data |> 
   count(education) |> 
   left_join(education_labels, by = c("education" = "name")) |> 
   mutate(education_label = coalesce(label, education),
-         # Collapse categories with count < 5 into Other
-         education_final = ifelse(n < 5, "Other", education_label)) |> 
+         education_final = if_else(n < 5, "Other", education_label)) |> 
   group_by(education_final) |> 
   summarise(n = sum(n)) |> 
   ungroup() |> 
-  # Sort in descending order
   arrange(desc(n)) |> 
-  mutate(education_final = factor(education_final, levels = rev(education_final)))
-
-# Create labels with both category name and percentage
-education_stacked_data <- education_stacked_data |> 
+  mutate(education_final = factor(education_final, levels = rev(education_final))) |> 
   mutate(percent = round(n/sum(n) * 100),
          label_text = paste0(education_final, "\n(", percent, "%)"))
 
+# Stacked horizontal bar
 plot_education_stacked <- education_stacked_data |> 
   ggplot(aes(x = "", y = n, fill = education_final)) +
   geom_col(width = 0.3) +
@@ -398,34 +401,40 @@ print(plot_education_stacked)
 #| fig-height: 3
 #| fig-width: 10
 
-# Create alternative stacked bar plot for employment situation
+# Modified labels for improve readability in plots
+employment_labels <- label_dict |> 
+  filter(list_name == "employment_status") |> 
+  select(name, label) |> 
+  mutate(label = case_when(
+    str_detect(label, "Employed full-time") ~ "Employed\nfull-time",
+    str_detect(label, "Employed part-time") ~ "Employed\npart-time",
+    str_detect(label, "Unemployed and looking") ~ "Unemployed and\nlooking for work",
+    str_detect(label, "Unemployed and not") ~ "Unemployed and\nnot looking for work",
+    TRUE ~ label
+  ))
+
+# Dataframe for stacked horizontal bar
 employment_stacked_data <- registration_data |> 
   count(employment_situation) |> 
   left_join(employment_labels, by = c("employment_situation" = "name")) |> 
   mutate(employment_label = coalesce(label, employment_situation),
-         # First collapse unemployed categories
          employment_collapsed = case_when(
            str_detect(employment_situation, "unemployed") ~ "Unemployed",
            TRUE ~ employment_label
          )) |> 
-  # Group by collapsed categories and sum counts
   group_by(employment_collapsed) |> 
   summarise(n = sum(n)) |> 
   ungroup() |> 
-  # Then collapse categories with count < 10 into Other
   mutate(employment_final = ifelse(n < 10, "Other", employment_collapsed)) |> 
   group_by(employment_final) |> 
   summarise(n = sum(n)) |> 
   ungroup() |> 
-  # Sort in descending order
   arrange(desc(n)) |> 
-  mutate(employment_final = factor(employment_final, levels = rev(employment_final)))
-
-# Create labels with both category name and percentage
-employment_stacked_data <- employment_stacked_data |> 
+  mutate(employment_final = factor(employment_final, levels = rev(employment_final))) |> 
   mutate(percent = round(n/sum(n) * 100),
          label_text = paste0(employment_final, "\n(", percent, "%)"))
 
+# Stacked horizontal bar
 plot_employment_stacked <- employment_stacked_data |> 
   ggplot(aes(x = "", y = n, fill = employment_final)) +
   geom_col(width = 0.3) +
@@ -501,29 +510,8 @@ print(plot_programming)
 #| label: plot-llm-platforms
 #| fig-height: 6
 
-# Process LLM platforms data - convert all to character first
-llm_platforms_data <- registration_data |> 
-  select(starts_with("llm_platforms")) |> 
-  mutate(across(everything(), as.character)) |> 
-  mutate(id = row_number()) |> 
-  pivot_longer(-id, 
-               names_to = "platform_var", 
-               values_to = "platform") |> 
-  filter(!is.na(platform) & platform != "NA") |> 
-  separate_rows(platform, sep = " ") |> 
-  filter(platform != "" & platform != "0" & platform != "1")
-
-# Get platform labels if available
-platform_labels <- label_dict |> 
-  filter(list_name == "llm_tools") |> 
-  select(name, label)
-
 # Count and plot platform usage - top 10 with ties
-plot_llm_platforms <- llm_platforms_data |> 
-  count(platform) |> 
-  left_join(platform_labels, by = c("platform" = "name")) |> 
-  mutate(platform_label = coalesce(label, platform),
-         rank = min_rank(desc(n))) |> 
+plot_llm_platforms <- llm_platforms_summary |> 
   filter(rank <= 10) |>  # This will include ties at rank 10
   ggplot(aes(x = reorder(platform_label, n), y = n)) +
   geom_col(fill = owd_palette[2]) +
