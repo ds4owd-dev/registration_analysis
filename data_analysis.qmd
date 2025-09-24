@@ -34,7 +34,7 @@ background_color <- "#f5f5f2"
 #| label: load-data
 
 form_id <- "ashaEDvw4ZLwGi9bqXGeqb"
-form_file <- "registration_form.xlsx"
+form_file <- "data/registration_form.xlsx"
 
 # fetch data from Kobo with robotoolbox
 raw_data <- kobo_data(x = form_id,
@@ -44,7 +44,7 @@ raw_data <- kobo_data(x = form_id,
 questionnaire <- read_xlsx(form_file,
                            sheet = "survey")
 
-label_dict <- read_xlsx("registration_form.xlsx",
+label_dict <- read_xlsx(form_file,
                         sheet = "choices")
 ```
 
