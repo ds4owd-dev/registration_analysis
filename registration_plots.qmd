@@ -1,0 +1,286 @@
+---
+title: "Course Registration Plots"
+format: html
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# Set global options
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+
+# Load required libraries
+library(tidyverse)
+library(robotoolbox)
+library(readxl)
+library(labelled)
+library(countries)
+
+# Define OWD color palette
+owd_palette <- c("#5b195b", "#9b2c60", "#ce525b",
+                 "#f08453", "#ffbd54", "#f9f871")
+
+low_purple <- "#ab84a8"
+high_purple <- "#5b195b"
+map_grey <- "grey80"
+```
+
+```{r}
+#| label: load-data
+
+form_id <- "ashaEDvw4ZLwGi9bqXGeqb"
+form_file <- "data/registration_form.xlsx"
+roster_url <- "https://raw.githubusercontent.com/ds4owd-dev/admin/refs/heads/main/data/final/tbl-01-ds4owd-participant-roster.csv?token=GHSAT0AAAAAADFER3QYDXJUF5MVXVJ4Q2R22GVLRYQ"
+
+
+# fetch data from Kobo with robotoolbox
+raw_data <- kobo_data(x = form_id,
+                      all_versions = TRUE)
+
+# read in questionnaire and labels from XLS form 
+questionnaire <- read_xlsx(form_file,
+                           sheet = "survey")
+
+label_dict <- read_xlsx(form_file,
+                        sheet = "choices")
+
+# read participant roster
+team_users <- c("massarin", "larnsce", "seawaR", 
+                "galacticasparagus", "rainbow-train", "betadetective")
+
+participant_roster <- read_csv(file = roster_url) |> 
+  filter(!github_username %in% team_users)
+```
+
+```{r}
+#| label: data-processing
+#| include: false
+
+kobo_clean <- raw_data |>
+  mutate(github_username = case_when(
+    github_username == "@FarahArbi" ~ "FarahArbi",
+    github_username == "Cecilia2020-ux!" ~ "Cecilia2020-ux",
+    github_username == "https://github.com/squiebble" ~ "squiebble",
+    github_username == "odehcaleb/my-space" ~ "odehcaleb",
+    github_username == "https://github.com/FundileK" ~ "FundileK",
+    github_username == "https://github.com/stacianordin" ~ "stacianordin",
+    github_username == "https://github.com/Fadilah-hub" ~ "Fadilah-hub",
+    github_username == "https://github.com/adesijivictoria" ~ "adesijivictoria",
+    github_username == "wendiegrm@gmail.com" ~ "WondiberNega",
+    github_username == "mada Mcnight" ~ "Madalitsokanache",
+    github_username == "Bensi4-first" ~ "Bensi4",
+    github_username == "Mundrugo Sunday James" ~ "munjame",
+    github_username == "munashechiwanza" ~ "chiwanzamunashe",
+    github_username == "rebecca-lk" ~ "Rebecca-LK",
+    github_username == "collins1125" ~ "Collins1125",
+    github_username == "https://github.com/Andrema123-GIT" ~ "Andrema123-GIT",
+    github_username == "Gyamphie" ~ "Djamphie",
+    github_username == "kaitlingpeck" ~ "kpeckEREF",
+    github_username == "kunzrp@gmail.com" ~ "kunzrp",
+    github_username == "alazarnegash1" ~ "alazarnegash-horecha",
+    github_username == "https://github.com/" & first_name == "Hope" ~ "HopeChilunga",
+    github_username == "Collo001" ~ "Collo2004",
+    github_username == "https://github.com/imegit" ~ "imegit",
+    github_username == "Promise-707" ~ "Promise707-lab",
+    github_username == "Assumpta Obianuju Ezeaba" ~ "Assumpta-hub",
+    github_username == "faiza.audri@northsouth.edu" ~ "faizaaudri03",
+    github_username == "AnalystKemi (https://github.com/AnalystKemi)" ~ "AnalystKemi",
+    github_username == "https://github.com/astute2011/" ~ "astute2011",
+    github_username == "phumlilemafuze@gamail.com" ~ "PhumlileAmanda",
+    github_username == "paul" ~ "tangqiqing",
+    github_username == "Harlod Zaunda" ~ "Harlod-max",
+    github_username == "ruraldevsolutions" ~ "yousefia601",
+    TRUE ~ github_username)) |>
+  mutate(email = tolower(email)) |>
+  mutate(email = case_when(
+    email == "ayousefi@iut.ac.ir" ~ "yousefia601@yahoo.com",
+    TRUE ~ email
+  )) |>
+  mutate(github_username = tolower(github_username)) |>
+  distinct(github_username, .keep_all = TRUE) |> 
+  select(github_username,
+         gender,
+         age_group,
+         country_ISO3 = country_residence)
+
+registration_data <- kobo_clean |> 
+  inner_join(participant_roster |> 
+              select(github_username),
+            by = "github_username")
+  
+registration_country <- registration_data |> 
+  group_by(country_ISO3) |> 
+  summarise(n_resgitered = n()) |> 
+  ungroup() |> 
+  right_join(world, join_by(country_ISO3 == ISO3)) |> 
+  filter(region != "Antarctica")
+
+# Gender representation
+gender_counts <- registration_data |> 
+  count(gender) |> 
+  mutate(percent = round(n/sum(n) * 100))
+
+woman_percent <- gender_counts |> 
+  filter(gender == "woman") |> 
+  pull(percent)
+
+```
+
+```{r}
+#| label: plot-countries
+#| echo: false
+#| fig.width: 8
+#| fig.height: 4
+
+# Country representation
+country_labels <- label_dict |> 
+  filter(list_name == "countries") |> 
+  select(name, label)
+
+country_counts <- registration_data |> 
+  count(country_ISO3) |> 
+  left_join(country_labels, 
+            by = c("country_ISO3" = "name")) |> 
+  mutate(country_name = coalesce(label, country_ISO3)) |> 
+  arrange(desc(n))
+  
+plain <- theme(
+  axis.text = element_blank(),
+  axis.line = element_blank(),
+  axis.ticks = element_blank(),
+  panel.border = element_blank(),
+  panel.grid = element_blank(),
+  axis.title = element_blank(),
+  panel.background = element_rect(fill = "white"),
+  plot.margin =  margin(t = 0, r = 0, b = 0, l = 0, 
+                        unit = "pt"),
+  plot.title.position = "plot",
+  plot.title = element_text(hjust = 0.5, 
+                            size = 14, 
+                            face = "bold")
+)
+
+countries_plot <- ggplot(data = registration_country, 
+                         mapping = aes(x = long, 
+                                       y = lat, 
+                                       group = group)) + 
+  coord_sf() +
+  geom_polygon(aes(fill = n_resgitered)) +
+  scale_fill_gradient(low = low_purple, 
+                      high = high_purple, 
+                      na.value = map_grey) +
+  labs(title = "Number registrations for ds4owd-002 by country",
+       caption = "Number of complete registrations by country for the second iteration of the course Data Science for Open WASH Data \n(ds4owd-002)  displayed on a world map.",
+       fill = "") +
+  plain
+
+countries_plot
+
+ggsave("countries_plot.jpg", plot = countries_plot, width = 8, height = 4, dpi = 300)
+```
+
+```{r}
+#| label: plot-population-pyramid
+#| fig-width: 8
+#| fig-height: 6
+
+# Age and gender labels
+age_labels <- label_dict |> 
+  filter(list_name == "list_age_group") |> 
+  select(name, label)
+
+gender_labels <- label_dict |> 
+  filter(list_name == "list_gender") |> 
+  select(name, label)
+
+# Population pyramid data
+# the two groups corresponding to older ages were merged due to low occurence
+pyramid_data <- registration_data |> 
+  filter(age_group != "prefer_not_to_say_age",
+         gender %in% c("man", "woman")) |> 
+  mutate(age_group = case_when(
+    age_group %in% c("55_64", "65_or_older") ~ "55_older",
+    TRUE ~ age_group
+  )) |> 
+  count(age_group, gender) |> 
+  left_join(age_labels, by = c("age_group" = "name")) |> 
+  left_join(gender_labels, by = c("gender" = "name")) |> 
+  mutate(age_label = case_when(
+    age_group == "55_older" ~ "55 or older",
+    TRUE ~ coalesce(label.x, age_group)
+  ),
+         gender_label = coalesce(label.y, gender),
+         n_adjusted = ifelse(gender == "man", -n, n))
+
+# Create population pyramid
+plot_pyramid <- pyramid_data |> 
+  ggplot(aes(x = age_label, y = n_adjusted, fill = gender_label)) +
+  geom_col(width = 0.8) +
+  geom_label(aes(label = abs(n_adjusted), 
+                y = n_adjusted + ifelse(gender == "man", -0.5, 0.5)), 
+            size = 3.5, fontface = "bold", fill = map_grey) +
+  coord_flip() +
+  scale_y_continuous(labels = function(x) abs(x),
+                     expand = expansion(mult = c(0.15, 0.15))) +
+  scale_fill_manual(values = c("Man" = owd_palette[1], 
+                               "Woman" = owd_palette[3])) +
+  labs(x = "Age Group", 
+       y = "Number of registrations", 
+       fill = "",
+       title = "Distribution of age group by gender",
+       caption = "Age group distribution by gender of the population registered for the second iteration of the course Data Science for Open WASH \nData (ds4owd-002).") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5, 
+                            size = 14, 
+                            face = "bold",
+                            margin = margin(b = 30, t = 30)),
+        plot.caption = element_text(margin = margin(t = 30)))
+
+print(plot_pyramid)
+
+ggsave("plot_pyramid.jpg", plot = plot_pyramid, width = 8, height = 6, dpi = 300)
+```
+
+```{r}
+#| label: prepare-post-stats
+#| include: false
+
+# Get top 3 countries with ties
+top_countries <- country_counts |>
+  slice_max(n, n = 3, with_ties = TRUE) |>
+  mutate(country_display = paste0(country_name, " (", n, ")"))
+
+# Create formatted string for top countries
+top_countries_text <- if(nrow(top_countries) > 3) {
+  paste0(
+    paste(top_countries$country_display[1:(nrow(top_countries)-1)], collapse = ", "),
+    ", and ",
+    top_countries$country_display[nrow(top_countries)]
+  )
+} else {
+  paste0(
+    paste(top_countries$country_display[1:2], collapse = ", "),
+    ", and ",
+    top_countries$country_display[3]
+  )
+}
+
+# Total number of registrations
+total_registrations <- nrow(registration_data)
+```
+
+## Course Update: ds4owd-002
+
+🌍 **Global reach:** `r total_registrations` WASH professionals registered for our Data Science for Open WASH Data course, with strong participation from `r top_countries_text`.
+
+👩‍💻 **Gender balance:** `r woman_percent`% of participants are women, contributing to diversity in WASH data science.
+
+🚀 **Mission:** Empowering WASH professionals with R programming and data visualization skills to transform water and sanitation data into actionable insights.
+
+#DataScience #WASH #OpenSource #DataForGood
