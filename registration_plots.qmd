@@ -274,13 +274,3 @@ top_countries_text <- if(nrow(top_countries) > 3) {
 # Total number of registrations
 total_registrations <- nrow(registration_data)
 ```
-
-## Course Update: ds4owd-002
-
-🌍 **Global reach:** `r total_registrations` WASH professionals registered for our Data Science for Open WASH Data course, with strong participation from `r top_countries_text`.
-
-👩‍💻 **Gender balance:** `r woman_percent`% of participants are women, contributing to diversity in WASH data science.
-
-🚀 **Mission:** Empowering WASH professionals with R programming and data visualization skills to transform water and sanitation data into actionable insights.
-
-#DataScience #WASH #OpenSource #DataForGood
