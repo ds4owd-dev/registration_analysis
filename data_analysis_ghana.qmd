@@ -450,7 +450,8 @@ prog_labels <- label_dict |>
     str_detect(label, "I have written programs") ~ "I have written\nprograms for own use",
     str_detect(label, "I have written and maintained") ~ "I have written and\nmaintained larger software",
     TRUE ~ label
-  ))
+  )) |> 
+  mutate(label = factor(label))
 
 # Combine programming experience variables
 prog_data <- registration_data |> 
@@ -459,7 +460,7 @@ prog_data <- registration_data |>
                names_to = "skill_type", 
                values_to = "level") |> 
   left_join(prog_labels, by = c("level" = "name")) |> 
-  mutate(level_label = coalesce(label, level),
+  mutate(#level_label = coalesce(label, level),
          skill_type = case_when(
            skill_type == "prog_general" ~ "General",
            skill_type == "prog_r" ~ "R",
@@ -467,8 +468,8 @@ prog_data <- registration_data |>
          ))
 
 plot_programming <- prog_data |> 
-  count(skill_type, level_label) |> 
-  ggplot(aes(x = reorder(level_label, n), y = n, fill = skill_type)) +
+  count(skill_type, label, .drop = FALSE) |>
+  ggplot(aes(x = reorder(label, n), y = n, fill = skill_type)) +
   geom_col(position = "dodge") +
   geom_text(aes(label = n), position = position_dodge(width = 0.9), hjust = -0.2, size = 3, fontface = "bold") +
   coord_flip() +
