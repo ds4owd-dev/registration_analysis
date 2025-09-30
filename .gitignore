@@ -5,3 +5,7 @@
 CLAUDE.md
 .DS_Store
 *.csv
+
+# Quarto/R Markdown outputs
+figure-html/
+libs/

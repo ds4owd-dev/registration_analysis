@@ -5,7 +5,7 @@ library(readxl)
 library(labelled)
 
 form_id <- "ashaEDvw4ZLwGi9bqXGeqb"
-form_file <- "data/registration_form.xlsx"
+form_file <- "../data/registration_form.xlsx"
 roster_url <- "https://raw.githubusercontent.com/ds4owd-dev/admin/refs/heads/main/data/final/tbl-01-ds4owd-participant-roster.csv?token=GHSAT0AAAAAADFER3QYR7YNXPZU2WMUF2AE2G322KA"
 
 # fetch data from Kobo with robotoolbox
