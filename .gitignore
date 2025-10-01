@@ -3,8 +3,8 @@
 .RData
 .Ruserdata
 CLAUDE.md
+.claude/
 .DS_Store
-*.csv
 
 # Rendering output
 figure-html/
@@ -12,8 +12,7 @@ libs/
 .html
 .md
 
-output/*.csv
-output/*.xlsx
-output/**/*/.csv
-output/**/*/.xlsx
-.claude/
+# Fallback security to prevent data leak
+*.csv
+*.xlsx
+*.xls

@@ -16,3 +16,8 @@ kobo_setup(
      token = "your_api_token"
    )
 ```
+
+If data is private, use the private submodule
+```bash
+/registration_analysis_private/{data, output}
+```
