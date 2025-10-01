@@ -182,7 +182,7 @@ countries_plot <- ggplot(data = registration_country,
 
 countries_plot
 
-ggsave(here::here("output/countries_plot.jpg"), plot = countries_plot, width = 8, height = 4, dpi = 300)
+ggsave(here::here("output/registration_plots/countries_plot.jpg"), plot = countries_plot, width = 8, height = 4, dpi = 300)
 ```
 
 ```{r}
@@ -245,7 +245,7 @@ plot_pyramid <- pyramid_data |>
 
 print(plot_pyramid)
 
-ggsave(here::here("output/plot_pyramid.jpg"), plot = plot_pyramid, width = 8, height = 6, dpi = 300)
+ggsave(here::here("output/registration_plots/plot_pyramid.jpg"), plot = plot_pyramid, width = 8, height = 6, dpi = 300)
 ```
 
 ```{r}
