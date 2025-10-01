@@ -9,3 +9,5 @@ CLAUDE.md
 # Quarto/R Markdown outputs
 figure-html/
 libs/
+output/
+outputs/
