@@ -22,6 +22,7 @@ library(tidyverse)
 library(robotoolbox)
 library(readxl)
 library(labelled)
+library(here)
 
 # Define OWD color palette
 owd_palette <- c("#5b195b", "#9b2c60", "#ce525b",
@@ -34,7 +35,7 @@ background_color <- "#f5f5f2"
 #| label: load-data
 
 form_id <- "ashaEDvw4ZLwGi9bqXGeqb"
-form_file <- "../data/registration_form.xlsx"
+form_file <- "data/registration_form.xlsx"
 
 # fetch data from Kobo with robotoolbox
 raw_data <- kobo_data(x = form_id,
@@ -64,7 +65,8 @@ registration_data <- raw_data |>
          prog_r,
          prog_python,
          starts_with("llm_platforms")) |> 
-  distinct(github_username, .keep_all = TRUE)
+  distinct(github_username, .keep_all = TRUE) |>
+  filter(country_residence == "GHA")
 
 # starts_with("llm_") & !starts_with("llm_platforms")
 
@@ -157,36 +159,14 @@ top_llm_tools <- paste(head(llm_platforms_summary$platform_label_clean, 3), coll
 llm_users_percent <- round(sum(!is.na(registration_data$llm_platforms)) / nrow(registration_data) * 100)
 ```
 
-We're thrilled to have received **`r nrow(registration_data)` registrations** so far from passionate learners worldwide who are ready to transform water, sanitation, and hygiene data into actionable insights! 📊
 
 ```{r}
 #| label: plot-country
+#| include: false
 
-# Get country data with labels
-country_df <- registration_data |> 
-  count(country_residence) |> 
-  left_join(country_labels, by = c("country_residence" = "name")) |> 
-  mutate(country_name = coalesce(label, country_residence),
-         rank = min_rank(desc(n))) |> 
-  filter(rank <= 10)
-  
-plot_country <- country_df |> 
-  ggplot(aes(x = reorder(country_name, n), y = n)) +
-  geom_col(fill = owd_palette[1]) +
-  geom_text(aes(label = n), hjust = -0.2, size = 3.5, fontface = "bold") +
-  coord_flip() +
-  labs(x = "Country", 
-       y = "Number of registrations", 
-       title = "Top 10 Countries") +
-  theme_minimal() +
-  theme(plot.background = element_rect(fill = background_color, color = NA),
-        panel.background = element_rect(fill = background_color, color = NA)) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-
-print(plot_country)
+# Skip country plot since we're filtering for Ghana only
+# The country plot is not relevant for a single-country analysis
 ```
-
-**🗺 Global reach, diverse perspectives:** Our participants span continents, with African countries leading the way. We have `r country_counts$n[1]` registrations from `r country_counts$country_name[1]`, followed by strong representation from `r country_counts$country_name[2]` (`r country_counts$n[2]` registrations), `r country_counts$country_name[3]` (`r country_counts$n[3]` registrations) and `r country_counts$country_name[4]` (`r country_counts$n[4]` registrations). Also very exciting to see a strong female participation with `r woman_percent`% of the registrations. You're creating an inclusive learning environment where diverse voices will enrich our experience. 🤝
 
 ```{r}
 #| label: plot-population-pyramid
@@ -244,6 +224,10 @@ plot_pyramid <- pyramid_data |>
         panel.background = element_rect(fill = background_color, color = NA))
 
 print(plot_pyramid)
+
+# Save the plot at 300 dpi
+ggsave(here::here("output/plot_population_pyramid.png"), plot_pyramid,
+       width = 8, height = 6, dpi = 300)
 ```
 
 **📚 Meeting learners at every level:** While `r education_high`% of participants hold advanced degrees and `r fulltime_percent`% are employed full-time, `r r_beginners`% are beginners in R programming. This mix creates a unique learning environment where everyone brings valuable perspectives. Whether you're taking your first steps in coding or bringing years of WASH expertise we're ready to support you in this path of adding data science to your toolkit. 💻✨
@@ -394,6 +378,10 @@ plot_education_stacked <- education_stacked_data |>
   scale_fill_manual(values = owd_palette[3:(length(unique(education_stacked_data$education_final))+2)])
 
 print(plot_education_stacked)
+
+# Save the plot at 300 dpi
+ggsave(here::here("output/plot_education_stacked.png"), plot_education_stacked,
+       width = 10, height = 3, dpi = 300)
 ```
 
 ```{r}
@@ -456,6 +444,10 @@ plot_employment_stacked <- employment_stacked_data |>
   scale_fill_manual(values = owd_palette[2:(length(unique(employment_stacked_data$employment_final))+2)])
 
 print(plot_employment_stacked)
+
+# Save the plot at 300 dpi
+ggsave(here::here("output/plot_employment_stacked.png"), plot_employment_stacked,
+       width = 10, height = 3, dpi = 300)
 ```
 
 ```{r}
@@ -463,33 +455,34 @@ print(plot_employment_stacked)
 #| fig-height: 6
 
 # Get programming level labels and add line breaks
-prog_labels <- label_dict |> 
-  filter(list_name == "programming_exp") |> 
-  select(name, label) |> 
+prog_labels <- label_dict |>
+  filter(list_name == "programming_exp") |>
+  select(name, label) |>
   mutate(label = case_when(
+    str_detect(label, "I have none") ~ "I have\nnone",
     str_detect(label, "I have written a few") ~ "I have written\na few lines",
     str_detect(label, "I have written programs") ~ "I have written\nprograms for own use",
     str_detect(label, "I have written and maintained") ~ "I have written and\nmaintained larger software",
     TRUE ~ label
-  ))
+  )) |>
+  mutate(label = factor(label))
 
 # Combine programming experience variables
-prog_data <- registration_data |> 
-  select(prog_general, prog_r, prog_python) |> 
-  pivot_longer(everything(), 
-               names_to = "skill_type", 
-               values_to = "level") |> 
-  left_join(prog_labels, by = c("level" = "name")) |> 
-  mutate(level_label = coalesce(label, level),
-         skill_type = case_when(
+prog_data <- registration_data |>
+  select(prog_general, prog_r, prog_python) |>
+  pivot_longer(everything(),
+               names_to = "skill_type",
+               values_to = "level") |>
+  left_join(prog_labels, by = c("level" = "name")) |>
+  mutate(skill_type = case_when(
            skill_type == "prog_general" ~ "General",
            skill_type == "prog_r" ~ "R",
            skill_type == "prog_python" ~ "Python"
          ))
 
-plot_programming <- prog_data |> 
-  count(skill_type, level_label) |> 
-  ggplot(aes(x = reorder(level_label, n), y = n, fill = skill_type)) +
+plot_programming <- prog_data |>
+  count(skill_type, label, .drop = FALSE) |>
+  ggplot(aes(x = reorder(label, n), y = n, fill = skill_type)) +
   geom_col(position = "dodge") +
   geom_text(aes(label = n), position = position_dodge(width = 0.9), hjust = -0.2, size = 3, fontface = "bold") +
   coord_flip() +
@@ -502,6 +495,10 @@ plot_programming <- prog_data |>
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_programming)
+
+# Save the plot at 300 dpi
+ggsave(here::here("output/plot_programming_skills.png"), plot_programming,
+       width = 8, height = 6, dpi = 300)
 ```
 
 **🤖 AI-powered learning:** With `r llm_users_percent`% of participants already using AI tools (most popular: `r top_llm_tools`), we're excited to include our bonus module: **"Use of AI for coding support"**. This module will help all participants - from beginners to experienced coders - leverage AI tools effectively and responsibly in their data science journey.
@@ -525,6 +522,10 @@ plot_llm_platforms <- llm_platforms_summary |>
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 
 print(plot_llm_platforms)
+
+# Save the plot at 300 dpi
+ggsave(here::here("output/plot_llm_platforms.png"), plot_llm_platforms,
+       width = 8, height = 6, dpi = 300)
 ```
 
 Join this vibrant community committed to using data science for open research and data. Together, we're building the knowledge to tackle water and sanitation challenges. 🌊

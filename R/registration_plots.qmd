@@ -35,7 +35,7 @@ map_grey <- "grey80"
 #| label: load-data
 
 form_id <- "ashaEDvw4ZLwGi9bqXGeqb"
-form_file <- "../data/registration_form.xlsx"
+form_file <- "data/registration_form.xlsx"
 roster_url <- "https://raw.githubusercontent.com/ds4owd-dev/admin/refs/heads/main/data/final/tbl-01-ds4owd-participant-roster.csv?token=GHSAT0AAAAAADFER3QYDXJUF5MVXVJ4Q2R22GVLRYQ"
 
 
@@ -182,7 +182,7 @@ countries_plot <- ggplot(data = registration_country,
 
 countries_plot
 
-ggsave(here::here("registration_plots/output/countries_plot.jpg"), plot = countries_plot, width = 8, height = 4, dpi = 300)
+ggsave(here::here("output/countries_plot.jpg"), plot = countries_plot, width = 8, height = 4, dpi = 300)
 ```
 
 ```{r}
@@ -245,7 +245,7 @@ plot_pyramid <- pyramid_data |>
 
 print(plot_pyramid)
 
-ggsave(here::here("registration_plots/output/plot_pyramid.jpg"), plot = plot_pyramid, width = 8, height = 6, dpi = 300)
+ggsave(here::here("output/plot_pyramid.jpg"), plot = plot_pyramid, width = 8, height = 6, dpi = 300)
 ```
 
 ```{r}

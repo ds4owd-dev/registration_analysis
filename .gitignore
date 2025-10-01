@@ -6,8 +6,15 @@ CLAUDE.md
 .DS_Store
 *.csv
 
-# Quarto/R Markdown outputs
+# Rendering output
 figure-html/
 libs/
+.html
+.md
+
 output/
-outputs/
+!output/*.jpg
+!output/*.png
+!output/**/*.jpg
+!output/**/*.png
+.claude/
