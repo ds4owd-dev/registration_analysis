@@ -12,9 +12,8 @@ libs/
 .html
 .md
 
-output/
-!output/*.jpg
-!output/*.png
-!output/**/*.jpg
-!output/**/*.png
+output/*.csv
+output/*.xlsx
+output/**/*/.csv
+output/**/*/.xlsx
 .claude/
