@@ -9,9 +9,10 @@ Install dependencies using renv:
 renv::restore()
 ```
 
-## Structure
-
-- `data_analysis/` - Global registration analysis
-- `data_analysis_ghana/` - Ghana-specific analysis
-- `registration_plots/` - Map and demographic plots
-- `mentorship_data/` - Mentorship list generation
+Share access to sensitiva data files with Kobo and setup once:
+```r
+kobo_setup(
+     url = "https://kobo.humanitarianresponse.info",
+     token = "your_api_token"
+   )
+```
