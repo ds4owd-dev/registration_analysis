@@ -3,6 +3,7 @@ library(tidyverse)
 library(robotoolbox)
 library(readxl)
 library(labelled)
+library(here)
 
 form_id <- "ashaEDvw4ZLwGi9bqXGeqb"
 form_file <- "../data/registration_form.xlsx"
@@ -82,4 +83,4 @@ kobo_clean <- raw_data |>
              by = "github_username")
 
 write_csv(kobo_clean,
-          file = "output/mentorship_list.csv")
+          file = here::here("mentorship_data/output/mentorship_list.csv"))

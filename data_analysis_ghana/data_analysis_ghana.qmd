@@ -22,6 +22,7 @@ library(tidyverse)
 library(robotoolbox)
 library(readxl)
 library(labelled)
+library(here)
 
 # Define OWD color palette
 owd_palette <- c("#5b195b", "#9b2c60", "#ce525b",
@@ -225,7 +226,7 @@ plot_pyramid <- pyramid_data |>
 print(plot_pyramid)
 
 # Save the plot at 300 dpi
-ggsave("outputs/plot_population_pyramid.png", plot_pyramid,
+ggsave(here::here("data_analysis_ghana/outputs/plot_population_pyramid.png"), plot_pyramid,
        width = 8, height = 6, dpi = 300)
 ```
 
@@ -379,7 +380,7 @@ plot_education_stacked <- education_stacked_data |>
 print(plot_education_stacked)
 
 # Save the plot at 300 dpi
-ggsave("outputs/plot_education_stacked.png", plot_education_stacked,
+ggsave(here::here("data_analysis_ghana/outputs/plot_education_stacked.png"), plot_education_stacked,
        width = 10, height = 3, dpi = 300)
 ```
 
@@ -445,7 +446,7 @@ plot_employment_stacked <- employment_stacked_data |>
 print(plot_employment_stacked)
 
 # Save the plot at 300 dpi
-ggsave("outputs/plot_employment_stacked.png", plot_employment_stacked,
+ggsave(here::here("data_analysis_ghana/outputs/plot_employment_stacked.png"), plot_employment_stacked,
        width = 10, height = 3, dpi = 300)
 ```
 
@@ -496,7 +497,7 @@ plot_programming <- prog_data |>
 print(plot_programming)
 
 # Save the plot at 300 dpi
-ggsave("outputs/plot_programming_skills.png", plot_programming,
+ggsave(here::here("data_analysis_ghana/outputs/plot_programming_skills.png"), plot_programming,
        width = 8, height = 6, dpi = 300)
 ```
 
@@ -523,7 +524,7 @@ plot_llm_platforms <- llm_platforms_summary |>
 print(plot_llm_platforms)
 
 # Save the plot at 300 dpi
-ggsave("outputs/plot_llm_platforms.png", plot_llm_platforms,
+ggsave(here::here("data_analysis_ghana/outputs/plot_llm_platforms.png"), plot_llm_platforms,
        width = 8, height = 6, dpi = 300)
 ```
 
