@@ -9,10 +9,13 @@ CLAUDE.md
 # Rendering output
 figure-html/
 libs/
-.html
-.md
+*.html
+
 
 # Fallback security to prevent data leak
 *.csv
 *.xlsx
 *.xls
+
+# R Environment Variables
+.Renviron
