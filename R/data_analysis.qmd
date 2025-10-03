@@ -22,6 +22,7 @@ library(tidyverse)
 library(robotoolbox)
 library(readxl)
 library(labelled)
+library(here)
 
 # Define OWD color palette
 owd_palette <- c("#5b195b", "#9b2c60", "#ce525b",
@@ -34,7 +35,7 @@ background_color <- "#f5f5f2"
 #| label: load-data
 
 form_id <- "ashaEDvw4ZLwGi9bqXGeqb"
-form_file <- "data/registration_form.xlsx"
+form_file <- here::here("data/registration_form.xlsx")
 
 # fetch data from Kobo with robotoolbox
 raw_data <- kobo_data(x = form_id,

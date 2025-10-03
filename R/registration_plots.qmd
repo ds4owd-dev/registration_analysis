@@ -35,8 +35,15 @@ map_grey <- "grey80"
 #| label: load-data
 
 form_id <- "ashaEDvw4ZLwGi9bqXGeqb"
-form_file <- "data/registration_form.xlsx"
-roster_url <- "https://raw.githubusercontent.com/ds4owd-dev/admin/refs/heads/main/data/final/tbl-01-ds4owd-participant-roster.csv?token=GHSAT0AAAAAADFER3QYDXJUF5MVXVJ4Q2R22GVLRYQ"
+form_file <- here::here("data/registration_form.xlsx")
+
+# Fetch roster from GitHub with token authentication
+github_token <- Sys.getenv("GITHUB_PAT")
+if (github_token == "") {
+  stop("GITHUB_PAT environment variable not set. Please add it to your .Renviron file.")
+}
+
+roster_url <- "https://raw.githubusercontent.com/ds4owd-dev/admin/refs/heads/main/data/final/tbl-01-ds4owd-participant-roster.csv"
 
 
 # fetch data from Kobo with robotoolbox
@@ -50,11 +57,15 @@ questionnaire <- read_xlsx(form_file,
 label_dict <- read_xlsx(form_file,
                         sheet = "choices")
 
-# read participant roster
-team_users <- c("massarin", "larnsce", "seawaR", 
+# read participant roster with authentication
+team_users <- c("massarin", "larnsce", "seawaR",
                 "galacticasparagus", "rainbow-train", "betadetective")
 
-participant_roster <- read_csv(file = roster_url) |> 
+# Create curl handle with authorization header
+h <- curl::new_handle()
+curl::handle_setheaders(h, "Authorization" = paste("token", github_token))
+
+participant_roster <- read_csv(curl::curl(roster_url, handle = h), show_col_types = FALSE) |>
   filter(!github_username %in% team_users)
 ```
 
