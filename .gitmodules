@@ -1,0 +1,3 @@
+[submodule "registration_analysis_private"]
+	path = registration_analysis_private
+	url = https://github.com/ds4owd-dev/registration_analysis_private.git

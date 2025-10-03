@@ -3,5 +3,16 @@
 .RData
 .Ruserdata
 CLAUDE.md
+.claude/
 .DS_Store
+
+# Rendering output
+figure-html/
+libs/
+.html
+.md
+
+# Fallback security to prevent data leak
 *.csv
+*.xlsx
+*.xls
